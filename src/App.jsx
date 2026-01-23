@@ -2468,7 +2468,15 @@ const FitnessApp = () => {
   };
 
   // ============ PT CLIENTS VIEW ============
-  const PTClientsView = () => (
+  const PTClientsView = () => {
+    const deleteClient = (clientId, e) => {
+      e.stopPropagation(); // Prevent opening client detail
+      if (window.confirm('Are you sure you want to delete this client? This cannot be undone.')) {
+        setClients(clients.filter(c => c.id !== clientId));
+      }
+    };
+
+    return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div><h1 style={{ color: colors.text, margin: 0, fontSize: 26, fontWeight: 800, fontFamily: 'Outfit' }}>Clients</h1><p style={{ color: colors.textMuted, marginTop: 8 }}>{clients.length} enrolled ({clients.filter(c => c.status === 'onboarding').length} onboarding)</p></div>
@@ -2495,7 +2503,7 @@ const FitnessApp = () => {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               {c.status === 'onboarding' ? (
                 <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Setup</p><p style={{ color: colors.warning, margin: 0, fontSize: 18, fontWeight: 700 }}>{c.onboardingComplete ? Object.values(c.onboardingComplete).filter(Boolean).length : 0}/5</p></div>
               ) : (
@@ -2504,13 +2512,15 @@ const FitnessApp = () => {
                   <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Workouts</p><p style={{ color: colors.primary, margin: 0, fontSize: 20, fontWeight: 700 }}>{c.weeklyLogs.reduce((a, l) => a + l.workoutsCompleted, 0)}</p></div>
                 </>
               )}
+              <button onClick={(e) => deleteClient(c.id, e)} style={{ padding: 8, background: `${colors.danger}15`, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete client"><X size={16} color={colors.danger} /></button>
               <ChevronRight size={24} color={colors.textMuted} />
             </div>
           </div>
         </div>
       ))}
     </div>
-  );
+    );
+  };
 
   // ============ PT CLIENT DETAIL ============
   const PTClientDetail = ({ client }) => {
@@ -2563,6 +2573,9 @@ const FitnessApp = () => {
         updatedClient.onboardingComplete = { ...updatedClient.onboardingComplete, injuries: true };
       } else if (section === 'goals') {
         updatedClient.goals = data.goals || [];
+        updatedClient.isRunner = data.isRunner || false;
+        updatedClient.runningClub = data.runningClub || '';
+        updatedClient.runnerGoals = data.runnerGoals || [];
         updatedClient.onboardingComplete = { ...updatedClient.onboardingComplete, goals: true };
       } else if (section === 'assessments') {
         updatedClient.assessmentScores = data;
