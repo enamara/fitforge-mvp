@@ -493,6 +493,9 @@ const FitnessApp = () => {
       return {
         philosophy,
         schedule,
+        sessionsPerWeek: schedule.filter(s => s.type !== 'recovery').length,
+        weekFocus: `Week ${currentWeek}: ${currentWeek <= 4 ? 'Base Building' : currentWeek <= 8 ? 'Speed Development' : 'Peak Performance'}`,
+        recommendation,
         progressiveOverload: { currentWeek, intensity, recommendation },
         nutrition: ['Carbs 5-7g/kg for endurance', 'Protein 1.6g/kg for recovery', 'Hydrate: 500ml 2hrs before runs'],
         injuryPrevention: [
@@ -501,7 +504,7 @@ const FitnessApp = () => {
           'Strengthen glutes & hips weekly',
           'Replace shoes every 500-800km'
         ],
-        runnerTips: [
+        weeklyTips: [
           'Never increase weekly mileage by more than 10%',
           'Include 1 rest day minimum per week',
           'Strength training prevents 50% of running injuries',
@@ -599,14 +602,22 @@ const FitnessApp = () => {
 
     return {
       philosophy, schedule,
+      sessionsPerWeek,
+      weekFocus: `Week ${currentWeek}: ${currentWeek <= 4 ? 'Foundation' : currentWeek <= 8 ? 'Building Strength' : 'Peak Phase'}`,
+      recommendation,
       progressiveOverload: { currentWeek, intensity, recommendation },
-      nutrition: [`Protein: ${proteinTarget}g/day`, isFemale ? 'Post-workout protein within 30 min' : 'Post-workout: 30-40g protein', `Water: ${Math.round(client.weight * 0.035)}L+`],
+      nutrition: [`Protein: ${proteinTarget}g/day`, isFemale ? 'Post-workout protein within 30 min' : 'Post-workout: 30-40g protein', `Water: ${Math.round((client.weight || 70) * 0.035)}L+`],
       injuryPrevention: [
         ...activeInjuries.map(i => `🩹 ACTIVE: ${i.type} - ${i.notes}`),
         ...injuries.filter(i => i.status === 'recovered').slice(-2).map(i => `✅ Healed: ${i.type}`),
         '10-min warm-up every session'
       ],
-      longevity: [isSedentary ? '5-min walk every hour at work' : 'Stay active daily', lifestyle.stressLevel >= 7 ? 'Add breathing exercises' : 'Maintain stress management']
+      weeklyTips: [
+        isSedentary ? '5-min walk every hour at work' : 'Stay active on rest days',
+        lifestyle.stressLevel >= 7 ? 'Add breathing exercises for stress' : 'Maintain consistent sleep schedule',
+        'Track your progress weekly',
+        'Focus on form over weight'
+      ]
     };
   };
 
@@ -1234,7 +1245,7 @@ const FitnessApp = () => {
                           )}
                           <span style={{ background: challenge.groupType === 'corporate' ? `${colors.warning}20` : `${colors.secondary}20`, color: challenge.groupType === 'corporate' ? colors.warning : colors.secondary, padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600 }}>{challenge.groupType === 'corporate' ? 'CORPORATE' : 'CLUB'}</span>
                         </div>
-                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>{challenge.description}</p>
+                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                         <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11 }}>{challenge.groupName} • {challenge.participants?.length || 0} participants • {challenge.startDate} → {challenge.endDate}</p>
                       </div>
                       {challenge.hasPendingRequest ? (
@@ -1288,7 +1299,7 @@ const FitnessApp = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div>
                         <h4 style={{ color: colors.text, margin: 0, fontSize: 15, fontWeight: 600 }}>{challenge.name}</h4>
-                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>{challenge.description}</p>
+                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                         <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11 }}>{challenge.groupName} • {challenge.startDate} → {challenge.endDate}</p>
                       </div>
                       <span style={{ background: `${colors.success}20`, color: colors.success, padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600 }}>ENROLLED</span>
@@ -1328,7 +1339,7 @@ const FitnessApp = () => {
                             <span style={{ background: `${colors.secondary}20`, color: colors.secondary, padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600 }}>{challenge.groupName}</span>
                           )}
                         </div>
-                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>{challenge.description}</p>
+                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                         <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11 }}>{challenge.participants?.length || 0} participants • {challenge.startDate} → {challenge.endDate}</p>
                       </div>
                       {challenge.hasPendingRequest ? (
@@ -1917,7 +1928,7 @@ const FitnessApp = () => {
                 <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                     <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Heart size={18} color={colors.danger} style={{ marginRight: 8 }} />Health Metrics</h3>
-                    <button onClick={() => { setProfileEditSection('health'); setEditFormData({ weight: client.weight, targetWeight: client.targetWeight }); setShowProfileEdit(true); }} style={{ background: `${colors.primary}15`, border: 'none', borderRadius: 8, padding: '6px 12px', color: colors.primary, fontSize: 12, cursor: 'pointer' }}>Update</button>
+                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: 11 }}>Updated at reassessment</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     {[
@@ -2010,12 +2021,15 @@ const FitnessApp = () => {
               <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}`, marginBottom: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Target size={18} color={colors.primary} style={{ marginRight: 8 }} />Your Goals</h3>
-                  <button onClick={() => { setProfileEditSection('goals'); setEditFormData({ goals: client.goals || [], newGoal: '' }); setShowProfileEdit(true); }} style={{ background: `${colors.primary}15`, border: 'none', borderRadius: 8, padding: '6px 12px', color: colors.primary, fontSize: 12, cursor: 'pointer' }}>Edit</button>
+                  <span style={{ background: `${colors.primary}15`, padding: '4px 10px', borderRadius: 8, color: colors.primary, fontSize: 11 }}>Set with your PT</span>
                 </div>
-                {client.goals && client.goals.length > 0 ? (
+                {((client.goals && client.goals.length > 0) || (client.runnerGoals && client.runnerGoals.length > 0)) ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {client.goals.map((g, i) => (
-                      <span key={i} style={{ background: `${colors.primary}15`, color: colors.text, padding: '10px 16px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Star size={14} color={colors.primary} />{g}</span>
+                    {(client.goals || []).map((g, i) => (
+                      <span key={`g-${i}`} style={{ background: `${colors.primary}15`, color: colors.text, padding: '10px 16px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Star size={14} color={colors.primary} />{g}</span>
+                    ))}
+                    {(client.runnerGoals || []).map((g, i) => (
+                      <span key={`r-${i}`} style={{ background: `${colors.secondary}15`, color: colors.text, padding: '10px 16px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>🏃 {g}</span>
                     ))}
                   </div>
                 ) : (
@@ -2049,77 +2063,33 @@ const FitnessApp = () => {
             </>
           )}
 
-          {/* Profile Edit Modal */}
-          {showProfileEdit && (
+          {/* Profile Edit Modal - Injury Only */}
+          {showProfileEdit && profileEditSection === 'injury' && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
               <div style={{ background: colors.cardBg, borderRadius: 20, width: '90%', maxWidth: 450, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>
-                    {profileEditSection === 'health' && 'Update Health Metrics'}
-                    {profileEditSection === 'injury' && 'Report New Injury'}
-                    {profileEditSection === 'goals' && 'Edit Goals'}
-                  </h2>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Report New Injury</h2>
                   <button onClick={() => setShowProfileEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
                 </div>
 
-                {profileEditSection === 'health' && (
-                  <div>
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Current Weight (kg)</label>
-                      <input type="number" value={editFormData.weight || ''} onChange={e => setEditFormData({ ...editFormData, weight: parseInt(e.target.value) || '' })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
-                    </div>
-                    <div style={{ marginBottom: 24 }}>
-                      <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Target Weight (kg)</label>
-                      <input type="number" value={editFormData.targetWeight || ''} onChange={e => setEditFormData({ ...editFormData, targetWeight: parseInt(e.target.value) || '' })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
-                    </div>
-                    <button onClick={() => { updateClientProfile('weight', editFormData.weight); updateClientProfile('targetWeight', editFormData.targetWeight); setShowProfileEdit(false); }} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Save size={18} style={{ marginRight: 8 }} />Save Changes</button>
+                <div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Injury Type</label>
+                    <input value={editFormData.type || ''} onChange={e => setEditFormData({ ...editFormData, type: e.target.value })} placeholder="e.g. Lower back pain, Knee strain" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
                   </div>
-                )}
-
-                {profileEditSection === 'injury' && (
-                  <div>
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Injury Type</label>
-                      <input value={editFormData.type || ''} onChange={e => setEditFormData({ ...editFormData, type: e.target.value })} placeholder="e.g. Lower back pain, Knee strain" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
-                    </div>
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Status</label>
-                      <select value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }}>
-                        <option value="managing">Currently Managing</option>
-                        <option value="recovered">Recovered</option>
-                      </select>
-                    </div>
-                    <div style={{ marginBottom: 24 }}>
-                      <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Notes for PT</label>
-                      <textarea value={editFormData.notes || ''} onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })} placeholder="Any details about the injury, limitations, etc." style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, height: 80, resize: 'none' }} />
-                    </div>
-                    <button onClick={() => { if (editFormData.type) { addNewInjury(editFormData); setShowProfileEdit(false); } }} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Plus size={18} style={{ marginRight: 8 }} />Report Injury</button>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Status</label>
+                    <select value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }}>
+                      <option value="managing">Currently Managing</option>
+                      <option value="recovered">Recovered</option>
+                    </select>
                   </div>
-                )}
-
-                {profileEditSection === 'goals' && (
-                  <div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                      {editFormData.goals?.map((g, i) => (
-                        <span key={i} style={{ background: `${colors.primary}20`, color: colors.text, padding: '8px 12px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {g}
-                          <button onClick={() => setEditFormData({ ...editFormData, goals: editFormData.goals.filter((_, idx) => idx !== i) })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}><X size={12} color={colors.textMuted} /></button>
-                        </span>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                      <input value={editFormData.newGoal || ''} onChange={e => setEditFormData({ ...editFormData, newGoal: e.target.value })} placeholder="Add a goal..." onKeyPress={e => { if (e.key === 'Enter' && editFormData.newGoal) { setEditFormData({ ...editFormData, goals: [...(editFormData.goals || []), editFormData.newGoal], newGoal: '' }); } }} style={{ flex: 1, padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
-                      <button onClick={() => { if (editFormData.newGoal) { setEditFormData({ ...editFormData, goals: [...(editFormData.goals || []), editFormData.newGoal], newGoal: '' }); } }} style={{ padding: '0 16px', background: colors.primary, border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer' }}><Plus size={18} /></button>
-                    </div>
-                    <p style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Suggestions:</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
-                      {['Lose weight', 'Build muscle', 'Improve strength', 'Better cardio', 'Increase flexibility', 'Reduce pain', 'Better posture', 'More energy', 'Run a 5K', 'Better sleep'].filter(g => !editFormData.goals?.includes(g)).slice(0, 5).map(g => (
-                        <button key={g} onClick={() => setEditFormData({ ...editFormData, goals: [...(editFormData.goals || []), g] })} style={{ background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 16, padding: '6px 12px', color: colors.textMuted, fontSize: 12, cursor: 'pointer' }}>{g}</button>
-                      ))}
-                    </div>
-                    <button onClick={() => { updateClientProfile('goals', editFormData.goals); setShowProfileEdit(false); }} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Save size={18} style={{ marginRight: 8 }} />Save Goals</button>
+                  <div style={{ marginBottom: 24 }}>
+                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Notes for PT</label>
+                    <textarea value={editFormData.notes || ''} onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })} placeholder="Any details about the injury, limitations, etc." style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, height: 80, resize: 'none' }} />
                   </div>
-                )}
+                  <button onClick={() => { if (editFormData.type) { addNewInjury(editFormData); setShowProfileEdit(false); } }} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Plus size={18} style={{ marginRight: 8 }} />Report Injury</button>
+                </div>
               </div>
             </div>
           )}
@@ -2157,12 +2127,15 @@ const FitnessApp = () => {
                   </div>
 
                   {/* Goals display */}
-                  {client.goals && client.goals.length > 0 && (
+                  {((client.goals && client.goals.length > 0) || (client.runnerGoals && client.runnerGoals.length > 0)) && (
                     <div style={{ marginTop: 24, textAlign: 'left' }}>
                       <h4 style={{ color: colors.text, margin: '0 0 12px', fontSize: 14 }}>Your Goals</h4>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {client.goals.map((g, i) => (
-                          <span key={i} style={{ background: `${colors.primary}15`, color: colors.text, padding: '8px 14px', borderRadius: 20, fontSize: 13 }}><Target size={12} style={{ marginRight: 6 }} />{g}</span>
+                        {(client.goals || []).map((g, i) => (
+                          <span key={`g-${i}`} style={{ background: `${colors.primary}15`, color: colors.text, padding: '8px 14px', borderRadius: 20, fontSize: 13 }}><Target size={12} style={{ marginRight: 6 }} />{g}</span>
+                        ))}
+                        {(client.runnerGoals || []).map((g, i) => (
+                          <span key={`r-${i}`} style={{ background: `${colors.secondary}15`, color: colors.text, padding: '8px 14px', borderRadius: 20, fontSize: 13 }}>🏃 {g}</span>
                         ))}
                       </div>
                     </div>
@@ -2936,9 +2909,12 @@ const FitnessApp = () => {
               {/* Goals */}
               <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
                 <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Goals</h3>
-                {client.goals.length > 0 ? (
+                {((client.goals && client.goals.length > 0) || (client.runnerGoals && client.runnerGoals.length > 0)) ? (
                   <>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{client.goals.map((g, i) => <span key={i} style={{ background: `${colors.primary}15`, border: `1px solid ${colors.primary}30`, color: colors.text, padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500 }}><Target size={14} style={{ marginRight: 6 }} />{g}</span>)}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {(client.goals || []).map((g, i) => <span key={`g-${i}`} style={{ background: `${colors.primary}15`, border: `1px solid ${colors.primary}30`, color: colors.text, padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500 }}><Target size={14} style={{ marginRight: 6 }} />{g}</span>)}
+                      {(client.runnerGoals || []).map((g, i) => <span key={`r-${i}`} style={{ background: `${colors.secondary}15`, border: `1px solid ${colors.secondary}30`, color: colors.text, padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500 }}>🏃 {g}</span>)}
+                    </div>
                     {client.weight && client.targetWeight && (
                       <div style={{ marginTop: 20 }}>
                         <p style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Weight Progress</p>
@@ -3351,7 +3327,7 @@ const FitnessApp = () => {
                             <span style={{ color: challenge.status === 'open' ? colors.success : colors.textMuted, fontSize: 10, fontWeight: 600, textTransform: 'uppercase' }}>{challenge.status}</span>
                           </button>
                         </div>
-                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>{challenge.description}</p>
+                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                         <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 11 }}>{challenge.participants?.length || 0} participants • {challenge.startDate} → {challenge.endDate}</p>
                       </div>
                     </div>
@@ -3953,7 +3929,7 @@ const FitnessApp = () => {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{challenge.name}</p>
-                    <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>{challenge.description}</p>
+                    <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                     <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11 }}>📅 {challenge.startDate} → {challenge.endDate} • {challenge.participants?.length || 0} enrolled</p>
                   </div>
                 </div>
@@ -4089,7 +4065,7 @@ const FitnessApp = () => {
               <h4 style={{ color: colors.text, margin: '0 0 16px', fontSize: 14 }}>New Challenge</h4>
               
               <input value={newChallenge.name} onChange={e => setNewChallenge({...newChallenge, name: e.target.value})} placeholder="Challenge name" style={{ width: '100%', padding: 10, marginBottom: 8, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13 }} />
-              <textarea value={newChallenge.description} onChange={e => setNewChallenge({...newChallenge, description: e.target.value})} placeholder="Description" style={{ width: '100%', padding: 10, marginBottom: 8, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13, resize: 'none', height: 50 }} />
+              <textarea value={newChallenge.description} onChange={e => setNewChallenge({...newChallenge, description: e.target.value})} placeholder="Description (use Enter for new lines)" style={{ width: '100%', padding: 10, marginBottom: 8, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13, resize: 'vertical', minHeight: 80 }} />
               
               {/* Challenge Type Selector */}
               <label style={{ color: colors.textMuted, fontSize: 11, display: 'block', marginBottom: 8 }}>Challenge Type</label>
@@ -4313,7 +4289,7 @@ const FitnessApp = () => {
                           <span style={{ fontSize: 20 }}>{challengeTypes.find(t => t.id === c.challengeType)?.icon || '💪'}</span>
                           <h4 style={{ color: colors.text, margin: 0, fontSize: 14, fontWeight: 600 }}>{c.name}</h4>
                         </div>
-                        <p style={{ color: colors.textMuted, margin: '0 0 8px', fontSize: 12 }}>{c.description}</p>
+                        <p style={{ color: colors.textMuted, margin: '0 0 8px', fontSize: 12, whiteSpace: 'pre-wrap' }}>{c.description}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: colors.textMuted, fontSize: 11 }}>{c.participants?.length || 0} participants</span>
                           <span style={{ color: colors.secondary, fontSize: 11 }}>{c.endDate}</span>
@@ -4501,7 +4477,7 @@ const FitnessApp = () => {
                         </div>
                         <span style={{ background: challenge.status === 'open' ? `${colors.success}20` : `${colors.textMuted}20`, color: challenge.status === 'open' ? colors.success : colors.textMuted, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>{challenge.status}</span>
                       </div>
-                      <p style={{ color: colors.textMuted, margin: 0, fontSize: 13 }}>{challenge.description}</p>
+                      <p style={{ color: colors.textMuted, margin: 0, fontSize: 13, whiteSpace: 'pre-wrap' }}>{challenge.description}</p>
                     </div>
                     <div style={{ padding: 20 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
