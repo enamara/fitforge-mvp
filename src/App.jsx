@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Activity, Users, Target, TrendingUp, Calendar, Heart, Dumbbell, Clock, Award, ChevronRight, ChevronLeft, Plus, Check, AlertTriangle, User, FileText, Home, BarChart2, Clipboard, Utensils, Shield, Zap, Sun, Moon, Droplets, ArrowRight, Star, Trophy, Flag, Play, Save, X, Download, Briefcase, Monitor, LogIn, LogOut, Eye, Video, Flame, Lock, Mail } from 'lucide-react';
 
@@ -332,23 +332,63 @@ const FitnessApp = () => {
     text: '#FFFFFF', textMuted: '#A0A0B0', cardBg: '#252540', borderColor: '#3A3A5C'
   };
 
+  // ============ LOCAL STORAGE PERSISTENCE ============
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedClients = localStorage.getItem('fitforge-clients');
+    const savedGroups = localStorage.getItem('fitforge-groups');
+    const savedRequests = localStorage.getItem('fitforge-requests');
+    
+    if (savedClients) {
+      try { setClients(JSON.parse(savedClients)); } catch (e) { console.log('Error loading clients'); }
+    }
+    if (savedGroups) {
+      try { setGroups(JSON.parse(savedGroups)); } catch (e) { console.log('Error loading groups'); }
+    }
+    if (savedRequests) {
+      try { setMembershipRequests(JSON.parse(savedRequests)); } catch (e) { console.log('Error loading requests'); }
+    }
+  }, []);
+
+  // Save data to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('fitforge-clients', JSON.stringify(clients));
+  }, [clients]);
+
+  useEffect(() => {
+    localStorage.setItem('fitforge-groups', JSON.stringify(groups));
+  }, [groups]);
+
+  useEffect(() => {
+    localStorage.setItem('fitforge-requests', JSON.stringify(membershipRequests));
+  }, [membershipRequests]);
+
   // Dynamic workout generator - handles runners and injury adaptations
   const generateDynamicWorkout = (client) => {
-    const { gender, fitnessLevel, injuries, lifestyle, goals, weeklyLogs, currentWeek, isRunner } = client;
+    // Defensive defaults for new/incomplete clients
+    const gender = client.gender || 'male';
+    const fitnessLevel = client.fitnessLevel || 'beginner';
+    const injuries = client.injuries || [];
+    const lifestyle = client.lifestyle || { workType: 'mixed', occupation: '', hoursSeated: 6, sleepHours: 7, stressLevel: 5, waterIntake: 2 };
+    const goals = client.goals || ['General fitness'];
+    const weeklyLogs = client.weeklyLogs || [];
+    const currentWeek = client.currentWeek || 1;
+    const isRunner = client.isRunner || false;
+    
     const isFemale = gender === 'female';
     
     // Check for ACTIVE injuries (managing status only)
     const activeInjuries = injuries.filter(i => i.status === 'managing');
-    const hasActiveBackPain = activeInjuries.some(i => i.type.toLowerCase().includes('back'));
-    const hasActiveKneeIssue = activeInjuries.some(i => i.type.toLowerCase().includes('knee'));
-    const hasActiveShoulderIssue = activeInjuries.some(i => i.type.toLowerCase().includes('shoulder'));
-    const hasActiveAnkleIssue = activeInjuries.some(i => i.type.toLowerCase().includes('ankle'));
+    const hasActiveBackPain = activeInjuries.some(i => i.type?.toLowerCase().includes('back'));
+    const hasActiveKneeIssue = activeInjuries.some(i => i.type?.toLowerCase().includes('knee'));
+    const hasActiveShoulderIssue = activeInjuries.some(i => i.type?.toLowerCase().includes('shoulder'));
+    const hasActiveAnkleIssue = activeInjuries.some(i => i.type?.toLowerCase().includes('ankle'));
     const hasAnyActiveInjury = activeInjuries.length > 0;
     
     const isSedentary = lifestyle.workType === 'sedentary';
     
-    const avgEnergy = weeklyLogs.slice(-3).reduce((a, l) => a + l.energy, 0) / Math.min(3, weeklyLogs.length) || 7;
-    const avgWorkouts = weeklyLogs.slice(-3).reduce((a, l) => a + l.workoutsCompleted, 0) / Math.min(3, weeklyLogs.length) || 3;
+    const avgEnergy = weeklyLogs.length > 0 ? weeklyLogs.slice(-3).reduce((a, l) => a + l.energy, 0) / Math.min(3, weeklyLogs.length) : 7;
+    const avgWorkouts = weeklyLogs.length > 0 ? weeklyLogs.slice(-3).reduce((a, l) => a + l.workoutsCompleted, 0) / Math.min(3, weeklyLogs.length) : 3;
     
     // Intensity adjustment - scale back if injured
     let intensity = 'standard';
@@ -2297,6 +2337,14 @@ const FitnessApp = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><Trophy size={18} color={colors.accent} /><span style={{ color: colors.text, fontWeight: 600, fontSize: 13 }}>Active Challenges</span></div>
           <p style={{ color: colors.textMuted, fontSize: 12, margin: 0 }}>2 running • {clients.length} participants</p>
         </div>
+        <button onClick={() => {
+          if (window.confirm('Reset all test data? This will restore default clients, groups, and challenges.')) {
+            localStorage.removeItem('fitforge-clients');
+            localStorage.removeItem('fitforge-groups');
+            localStorage.removeItem('fitforge-requests');
+            window.location.reload();
+          }
+        }} style={{ width: '100%', padding: 12, marginBottom: 8, background: 'transparent', border: `1px solid ${colors.warning}50`, borderRadius: 10, color: colors.warning, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>🔄 Reset Test Data</button>
         <button onClick={() => { setUserType(null); setLoggedInUser(null); setCurrentView('login'); }} style={{ width: '100%', padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.textMuted, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><LogOut size={18} /> Sign Out</button>
       </div>
     </div>
@@ -3833,11 +3881,12 @@ const FitnessApp = () => {
         bloodPressure: null,
         restingHR: null,
         injuries: [],
-        lifestyle: null,
+        lifestyle: { occupation: '', workType: 'mixed', hoursSeated: 6, sleepHours: 7, stressLevel: 5, waterIntake: 2 }, // Default lifestyle
         goals: [],
         assessmentScores: null,
         startDate: new Date().toISOString().split('T')[0],
-        currentWeek: 0,
+        currentWeek: 1,
+        isRunner: false,
         useCustomWorkout: false,
         customWorkouts: [],
         weeklyLogs: [],
