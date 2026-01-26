@@ -146,6 +146,15 @@ const FitnessApp = () => {
   const [isDark] = useState(true);
   const [clientActiveTab, setClientActiveTab] = useState('overview'); // Lifted state for client dashboard tabs
   const [workoutViewMode, setWorkoutViewMode] = useState('suggested'); // 'suggested' or 'custom' - lifted to prevent re-render reset
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Handle resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [clients, setClients] = useState([
     {
@@ -333,6 +342,8 @@ const FitnessApp = () => {
   };
 
   // ============ LOCAL STORAGE PERSISTENCE ============
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
   // Load data from localStorage on mount
   useEffect(() => {
     const savedClients = localStorage.getItem('fitforge-clients');
@@ -348,20 +359,28 @@ const FitnessApp = () => {
     if (savedRequests) {
       try { setMembershipRequests(JSON.parse(savedRequests)); } catch (e) { console.log('Error loading requests'); }
     }
+    // Mark data as loaded after a small delay to ensure state updates complete
+    setTimeout(() => setDataLoaded(true), 100);
   }, []);
 
-  // Save data to localStorage when it changes
+  // Save data to localStorage when it changes (only after initial load)
   useEffect(() => {
-    localStorage.setItem('fitforge-clients', JSON.stringify(clients));
-  }, [clients]);
+    if (dataLoaded) {
+      localStorage.setItem('fitforge-clients', JSON.stringify(clients));
+    }
+  }, [clients, dataLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('fitforge-groups', JSON.stringify(groups));
-  }, [groups]);
+    if (dataLoaded) {
+      localStorage.setItem('fitforge-groups', JSON.stringify(groups));
+    }
+  }, [groups, dataLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('fitforge-requests', JSON.stringify(membershipRequests));
-  }, [membershipRequests]);
+    if (dataLoaded) {
+      localStorage.setItem('fitforge-requests', JSON.stringify(membershipRequests));
+    }
+  }, [membershipRequests, dataLoaded]);
 
   // Dynamic workout generator - handles runners and injury adaptations
   const generateDynamicWorkout = (client) => {
@@ -996,32 +1015,32 @@ const FitnessApp = () => {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.darker} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.darker} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: isMobile ? 16 : 0 }}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap');`}</style>
-        <div style={{ width: '100%', maxWidth: 420, padding: 40 }}>
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{ width: 72, height: 72, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><Dumbbell size={36} color="white" /></div>
-            <h1 style={{ color: colors.text, fontSize: 32, fontWeight: 800, margin: 0, fontFamily: 'Outfit' }}>FitForge</h1>
-            <p style={{ color: colors.textMuted, marginTop: 8 }}>Your Wellness Journey</p>
+        <div style={{ width: '100%', maxWidth: 420, padding: isMobile ? 20 : 40 }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 24 : 40 }}>
+            <div style={{ width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: isMobile ? 14 : 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><Dumbbell size={isMobile ? 28 : 36} color="white" /></div>
+            <h1 style={{ color: colors.text, fontSize: isMobile ? 26 : 32, fontWeight: 800, margin: 0, fontFamily: 'Outfit' }}>FitForge</h1>
+            <p style={{ color: colors.textMuted, marginTop: 8, fontSize: isMobile ? 13 : 14 }}>Your Wellness Journey</p>
           </div>
-          <div style={{ display: 'flex', background: colors.darker, borderRadius: 12, padding: 4, marginBottom: 24 }}>
+          <div style={{ display: 'flex', background: colors.darker, borderRadius: 12, padding: 4, marginBottom: isMobile ? 16 : 24 }}>
             {['client', 'corporate', 'pt'].map(t => (
-              <button key={t} onClick={() => { setLoginType(t); setError(''); }} style={{ flex: 1, padding: 12, background: loginType === t ? colors.primary : 'transparent', border: 'none', borderRadius: 10, color: loginType === t ? 'white' : colors.textMuted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                {t === 'client' ? '👤 Client' : t === 'corporate' ? '🏢 Corporate' : '📋 PT'}
+              <button key={t} onClick={() => { setLoginType(t); setError(''); }} style={{ flex: 1, padding: isMobile ? 10 : 12, background: loginType === t ? colors.primary : 'transparent', border: 'none', borderRadius: 10, color: loginType === t ? 'white' : colors.textMuted, fontSize: isMobile ? 11 : 13, fontWeight: 600, cursor: 'pointer' }}>
+                {t === 'client' ? (isMobile ? '👤' : '👤 Client') : t === 'corporate' ? (isMobile ? '🏢' : '🏢 Corporate') : (isMobile ? '📋' : '📋 PT')}
               </button>
             ))}
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 20, padding: 32, border: `1px solid ${colors.borderColor}` }}>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}><Mail size={14} style={{ marginRight: 6 }} />Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={getPlaceholder()} style={{ width: '100%', padding: 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+          <div style={{ background: colors.cardBg, borderRadius: 20, padding: isMobile ? 20 : 32, border: `1px solid ${colors.borderColor}` }}>
+            <div style={{ marginBottom: isMobile ? 16 : 20 }}>
+              <label style={{ color: colors.textMuted, fontSize: isMobile ? 12 : 13, display: 'block', marginBottom: 8 }}><Mail size={14} style={{ marginRight: 6 }} />Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={getPlaceholder()} style={{ width: '100%', padding: isMobile ? 12 : 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}><Lock size={14} style={{ marginRight: 6 }} />Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="demo123" style={{ width: '100%', padding: 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+            <div style={{ marginBottom: isMobile ? 16 : 24 }}>
+              <label style={{ color: colors.textMuted, fontSize: isMobile ? 12 : 13, display: 'block', marginBottom: 8 }}><Lock size={14} style={{ marginRight: 6 }} />Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="demo123" style={{ width: '100%', padding: isMobile ? 12 : 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
             </div>
-            {error && <div style={{ background: `${colors.danger}20`, padding: 12, borderRadius: 10, marginBottom: 20 }}><p style={{ color: colors.danger, margin: 0, fontSize: 13 }}>{error}</p></div>}
-            <button onClick={handleLogin} style={{ width: '100%', padding: 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}><LogIn size={20} style={{ marginRight: 8 }} />Sign In</button>
+            {error && <div style={{ background: `${colors.danger}20`, padding: 12, borderRadius: 10, marginBottom: isMobile ? 16 : 20 }}><p style={{ color: colors.danger, margin: 0, fontSize: isMobile ? 11 : 13 }}>{error}</p></div>}
+            <button onClick={handleLogin} style={{ width: '100%', padding: isMobile ? 14 : 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: isMobile ? 14 : 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><LogIn size={isMobile ? 18 : 20} />Sign In</button>
           </div>
         </div>
       </div>
@@ -1851,45 +1870,45 @@ const FitnessApp = () => {
     return (
       <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif' }}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap');`}</style>
-        <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, padding: '24px 32px', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, padding: isMobile ? '16px' : '24px 32px', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 50, height: 50, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Dumbbell size={26} color="white" /></div>
-              <div><h1 style={{ color: 'white', margin: 0, fontSize: 20, fontWeight: 700 }}>Hi, {client.name.split(' ')[0]}! 💪</h1><p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: 13 }}>Week {client.currentWeek}</p></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
+              <div style={{ width: isMobile ? 40 : 50, height: isMobile ? 40 : 50, borderRadius: isMobile ? 10 : 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Dumbbell size={isMobile ? 20 : 26} color="white" /></div>
+              <div><h1 style={{ color: 'white', margin: 0, fontSize: isMobile ? 16 : 20, fontWeight: 700 }}>Hi, {client.name.split(' ')[0]}! 💪</h1><p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: isMobile ? 11 : 13 }}>Week {client.currentWeek}</p></div>
             </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setShowLog(true)} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><Plus size={16} /> Log Week</button>
-              <button onClick={() => { setUserType(null); setLoggedInUser(null); setCurrentView('login'); }} style={{ padding: 10, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer' }}><LogOut size={18} /></button>
+            <div style={{ display: 'flex', gap: isMobile ? 8 : 12 }}>
+              <button onClick={() => setShowLog(true)} style={{ padding: isMobile ? '8px 12px' : '10px 20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, color: 'white', fontSize: isMobile ? 11 : 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={isMobile ? 14 : 16} />{isMobile ? 'Log' : 'Log Week'}</button>
+              <button onClick={() => { setUserType(null); setLoggedInUser(null); setCurrentView('login'); }} style={{ padding: isMobile ? 8 : 10, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer' }}><LogOut size={isMobile ? 16 : 18} /></button>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginTop: isMobile ? 12 : 20, overflowX: 'auto', paddingBottom: 4 }}>
             {['overview', 'workout', 'progress', 'challenges', 'nutrition'].map(t => (
-              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: '10px 18px', background: activeTab === t ? 'white' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 20, color: activeTab === t ? colors.primary : 'white', fontSize: 13, fontWeight: activeTab === t ? 600 : 400, cursor: 'pointer', textTransform: 'capitalize' }}>{t}</button>
+              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: isMobile ? '8px 12px' : '10px 18px', background: activeTab === t ? 'white' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 20, color: activeTab === t ? colors.primary : 'white', fontSize: isMobile ? 11 : 13, fontWeight: activeTab === t ? 600 : 400, cursor: 'pointer', textTransform: 'capitalize', whiteSpace: 'nowrap', flexShrink: 0 }}>{t}</button>
             ))}
           </div>
         </div>
 
-        <div style={{ padding: 32, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ padding: isMobile ? 16 : 32, maxWidth: 1200, margin: '0 auto' }}>
           {activeTab === 'overview' && (
             <>
               {/* Re-assessment Banner */}
               {isReassessmentDue && (
-                <div style={{ background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, borderRadius: 16, padding: 24, marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, borderRadius: 16, padding: isMobile ? 16 : 24, marginBottom: isMobile ? 16 : 24, position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clipboard size={24} color="white" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: isMobile ? 40 : 50, height: isMobile ? 40 : 50, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clipboard size={isMobile ? 20 : 24} color="white" />
                       </div>
                       <div>
-                        <h3 style={{ color: 'white', margin: 0, fontSize: 18, fontWeight: 700 }}>🎉 Cycle {currentCycle} Complete!</h3>
-                        <p style={{ color: 'rgba(255,255,255,0.9)', margin: '4px 0 0', fontSize: 14 }}>Time for your 12-week reassessment to measure progress</p>
+                        <h3 style={{ color: 'white', margin: 0, fontSize: isMobile ? 14 : 18, fontWeight: 700 }}>🎉 Cycle {currentCycle} Complete!</h3>
+                        <p style={{ color: 'rgba(255,255,255,0.9)', margin: '4px 0 0', fontSize: isMobile ? 12 : 14 }}>Time for your 12-week reassessment</p>
                       </div>
                     </div>
                     {!client.reassessmentRequested ? (
-                      <button onClick={requestReassessment} style={{ padding: '12px 24px', background: 'white', border: 'none', borderRadius: 10, color: colors.warning, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Request Reassessment</button>
+                      <button onClick={requestReassessment} style={{ padding: isMobile ? '10px 20px' : '12px 24px', background: 'white', border: 'none', borderRadius: 10, color: colors.warning, fontSize: isMobile ? 12 : 14, fontWeight: 600, cursor: 'pointer', width: isMobile ? '100%' : 'auto' }}>Request Reassessment</button>
                     ) : (
-                      <span style={{ background: 'rgba(255,255,255,0.2)', padding: '10px 20px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600 }}>✓ Requested - PT will contact you</span>
+                      <span style={{ background: 'rgba(255,255,255,0.2)', padding: '10px 20px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600 }}>✓ Requested</span>
                     )}
                   </div>
                 </div>
@@ -1897,16 +1916,16 @@ const FitnessApp = () => {
 
               {/* Upcoming Re-assessment Notice */}
               {isReassessmentSoon && !isReassessmentDue && (
-                <div style={{ background: `${colors.secondary}15`, borderRadius: 12, padding: 16, marginBottom: 24, border: `1px solid ${colors.secondary}30`, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Clock size={20} color={colors.secondary} />
-                  <p style={{ color: colors.text, margin: 0, fontSize: 14 }}>
-                    <strong>Reassessment in {weeksUntilReassessment} week{weeksUntilReassessment > 1 ? 's' : ''}</strong> — End of Cycle {currentCycle} approaching!
+                <div style={{ background: `${colors.secondary}15`, borderRadius: 12, padding: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24, border: `1px solid ${colors.secondary}30`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Clock size={isMobile ? 16 : 20} color={colors.secondary} />
+                  <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 12 : 14 }}>
+                    <strong>Reassessment in {weeksUntilReassessment} week{weeksUntilReassessment > 1 ? 's' : ''}</strong> — End of Cycle {currentCycle}
                   </p>
                 </div>
               )}
 
               {/* Stats Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
                 {[
                   { label: 'Week', value: client.currentWeek, icon: Calendar, color: colors.primary, sub: `Cycle ${currentCycle}` },
                   { label: 'Workouts', value: client.weeklyLogs.reduce((a, l) => a + l.workoutsCompleted, 0), icon: Dumbbell, color: colors.secondary, sub: 'Total completed' },
@@ -1923,36 +1942,36 @@ const FitnessApp = () => {
               </div>
 
               {/* Profile & Health Section */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20, marginBottom: isMobile ? 16 : 24 }}>
                 {/* Health Metrics */}
-                <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Heart size={18} color={colors.danger} style={{ marginRight: 8 }} />Health Metrics</h3>
-                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: 11 }}>Updated at reassessment</span>
+                <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 12 : 20, flexWrap: 'wrap', gap: 8 }}>
+                    <h3 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600 }}><Heart size={isMobile ? 16 : 18} color={colors.danger} style={{ marginRight: 8 }} />Health Metrics</h3>
+                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: isMobile ? 9 : 11 }}>Updated at reassessment</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : '1fr 1fr', gap: isMobile ? 8 : 12 }}>
                     {[
                       { label: 'Height', value: client.height ? `${client.height} cm` : '—', icon: '📏' },
                       { label: 'Weight', value: client.weight ? `${client.weight} kg` : '—', icon: '⚖️', highlight: true },
                       { label: 'Target', value: client.targetWeight ? `${client.targetWeight} kg` : '—', icon: '🎯' },
                       { label: 'BP', value: client.bloodPressure || '—', icon: '💓' },
                       { label: 'Resting HR', value: client.restingHR ? `${client.restingHR} bpm` : '—', icon: '❤️' },
-                      { label: 'Progress', value: client.weight && client.targetWeight ? `${Math.abs(client.weight - client.targetWeight)} kg to go` : '—', icon: client.weight > client.targetWeight ? '📉' : '📈' }
+                      { label: 'Progress', value: client.weight && client.targetWeight ? `${Math.abs(client.weight - client.targetWeight)} kg` : '—', icon: client.weight > client.targetWeight ? '📉' : '📈' }
                     ].map((m, i) => (
-                      <div key={i} style={{ background: colors.darker, borderRadius: 10, padding: 12 }}>
-                        <span style={{ fontSize: 16 }}>{m.icon}</span>
-                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11 }}>{m.label}</p>
-                        <p style={{ color: m.highlight ? colors.primary : colors.text, margin: '2px 0 0', fontSize: 15, fontWeight: 600 }}>{m.value}</p>
+                      <div key={i} style={{ background: colors.darker, borderRadius: 10, padding: isMobile ? 10 : 12 }}>
+                        <span style={{ fontSize: isMobile ? 14 : 16 }}>{m.icon}</span>
+                        <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 9 : 11 }}>{m.label}</p>
+                        <p style={{ color: m.highlight ? colors.primary : colors.text, margin: '2px 0 0', fontSize: isMobile ? 13 : 15, fontWeight: 600 }}>{m.value}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Assessment Scores */}
-                <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Clipboard size={18} color={colors.secondary} style={{ marginRight: 8 }} />Assessment Scores</h3>
-                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: 11 }}>Cycle {currentCycle}</span>
+                <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 12 : 20 }}>
+                    <h3 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600 }}><Clipboard size={isMobile ? 16 : 18} color={colors.secondary} style={{ marginRight: 8 }} />Assessment Scores</h3>
+                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: isMobile ? 9 : 11 }}>Cycle {currentCycle}</span>
                   </div>
                   {client.assessmentScores ? (
                     <div style={{ display: 'grid', gap: 10 }}>
@@ -1983,10 +2002,10 @@ const FitnessApp = () => {
               </div>
 
               {/* Injuries Section */}
-              <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}`, marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Shield size={18} color={colors.warning} style={{ marginRight: 8 }} />Injury Status</h3>
-                  <button onClick={() => { setProfileEditSection('injury'); setEditFormData({ type: '', status: 'managing', notes: '' }); setShowProfileEdit(true); }} style={{ background: `${colors.warning}15`, border: 'none', borderRadius: 8, padding: '6px 12px', color: colors.warning, fontSize: 12, cursor: 'pointer' }}><Plus size={12} style={{ marginRight: 4 }} />Report Injury</button>
+              <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}`, marginBottom: isMobile ? 16 : 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 12 : 20, flexWrap: 'wrap', gap: 8 }}>
+                  <h3 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600 }}><Shield size={isMobile ? 16 : 18} color={colors.warning} style={{ marginRight: 8 }} />Injury Status</h3>
+                  <button onClick={() => { setProfileEditSection('injury'); setEditFormData({ type: '', status: 'managing', notes: '' }); setShowProfileEdit(true); }} style={{ background: `${colors.warning}15`, border: 'none', borderRadius: 8, padding: isMobile ? '5px 10px' : '6px 12px', color: colors.warning, fontSize: isMobile ? 11 : 12, cursor: 'pointer' }}><Plus size={12} style={{ marginRight: 4 }} />Report</button>
                 </div>
                 {client.injuries && client.injuries.length > 0 ? (
                   <div style={{ display: 'grid', gap: 10 }}>
@@ -2288,9 +2307,17 @@ const FitnessApp = () => {
     );
   };
 
-  // ============ PT SIDEBAR ============
+  // ============ PT SIDEBAR (Desktop) & MOBILE NAV ============
+  const navItems = [
+    { id: 'dashboard', icon: Home, label: 'Dashboard' },
+    { id: 'clients', icon: Users, label: 'Clients' },
+    { id: 'groups', icon: Flag, label: 'Groups' },
+    { id: 'reports', icon: BarChart2, label: 'Reports' },
+    { id: 'assessments', icon: Clipboard, label: 'Assessments' }
+  ];
+
   const PTSidebar = () => (
-    <div style={{ width: 260, background: `linear-gradient(180deg, ${colors.darker}, ${colors.dark})`, borderRight: `1px solid ${colors.borderColor}`, position: 'fixed', height: '100vh', display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+    <div style={{ width: 260, background: `linear-gradient(180deg, ${colors.darker}, ${colors.dark})`, borderRight: `1px solid ${colors.borderColor}`, position: 'fixed', height: '100vh', display: isMobile ? 'none' : 'flex', flexDirection: 'column', zIndex: 100 }}>
       <div style={{ padding: 24, borderBottom: `1px solid ${colors.borderColor}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Dumbbell size={24} color="white" /></div>
@@ -2298,7 +2325,7 @@ const FitnessApp = () => {
         </div>
       </div>
       <nav style={{ flex: 1, padding: 16 }}>
-        {[{ id: 'dashboard', icon: Home, label: 'Dashboard' }, { id: 'clients', icon: Users, label: 'Clients' }, { id: 'groups', icon: Flag, label: 'Groups' }, { id: 'reports', icon: BarChart2, label: 'Reports' }, { id: 'assessments', icon: Clipboard, label: 'Assessments' }].map(item => (
+        {navItems.map(item => (
           <button key={item.id} onClick={() => { setCurrentView(item.id); setSelectedClient(null); }} style={{ width: '100%', padding: '14px 16px', marginBottom: 6, background: currentView === item.id ? `${colors.primary}20` : 'transparent', border: 'none', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', borderLeft: currentView === item.id ? `3px solid ${colors.primary}` : '3px solid transparent' }}>
             <item.icon size={20} color={currentView === item.id ? colors.primary : colors.textMuted} />
             <span style={{ color: currentView === item.id ? colors.text : colors.textMuted, fontWeight: currentView === item.id ? 600 : 400, fontSize: 14 }}>{item.label}</span>
@@ -2320,6 +2347,52 @@ const FitnessApp = () => {
         }} style={{ width: '100%', padding: 12, marginBottom: 8, background: 'transparent', border: `1px solid ${colors.warning}50`, borderRadius: 10, color: colors.warning, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>🔄 Reset Test Data</button>
         <button onClick={() => { setUserType(null); setLoggedInUser(null); setCurrentView('login'); }} style={{ width: '100%', padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.textMuted, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><LogOut size={18} /> Sign Out</button>
       </div>
+    </div>
+  );
+
+  // Mobile Header
+  const PTMobileHeader = () => (
+    <div style={{ display: isMobile ? 'flex' : 'none', position: 'fixed', top: 0, left: 0, right: 0, height: 60, background: colors.darker, borderBottom: `1px solid ${colors.borderColor}`, alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 36, height: 36, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Dumbbell size={20} color="white" /></div>
+        <span style={{ color: colors.text, fontWeight: 700, fontSize: 16 }}>FitForge</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{ width: 40, height: 40, background: colors.cardBg, border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {showMobileMenu ? <X size={20} color={colors.text} /> : <Monitor size={20} color={colors.text} />}
+        </button>
+      </div>
+    </div>
+  );
+
+  // Mobile Bottom Navigation
+  const PTMobileNav = () => (
+    <div style={{ display: isMobile ? 'flex' : 'none', position: 'fixed', bottom: 0, left: 0, right: 0, height: 70, background: colors.darker, borderTop: `1px solid ${colors.borderColor}`, justifyContent: 'space-around', alignItems: 'center', zIndex: 100, paddingBottom: 10 }}>
+      {navItems.slice(0, 5).map(item => (
+        <button key={item.id} onClick={() => { setCurrentView(item.id); setSelectedClient(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px' }}>
+          <item.icon size={22} color={currentView === item.id ? colors.primary : colors.textMuted} />
+          <span style={{ fontSize: 10, color: currentView === item.id ? colors.primary : colors.textMuted, fontWeight: currentView === item.id ? 600 : 400 }}>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  // Mobile Menu Dropdown
+  const PTMobileMenu = () => (
+    <div style={{ display: showMobileMenu && isMobile ? 'block' : 'none', position: 'fixed', top: 60, left: 0, right: 0, background: colors.darker, borderBottom: `1px solid ${colors.borderColor}`, padding: 16, zIndex: 99 }}>
+      <div style={{ background: `${colors.primary}15`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}><Trophy size={16} color={colors.accent} /><span style={{ color: colors.text, fontWeight: 600, fontSize: 13 }}>Active Challenges</span></div>
+        <p style={{ color: colors.textMuted, fontSize: 12, margin: 0 }}>2 running • {clients.length} participants</p>
+      </div>
+      <button onClick={() => {
+        if (window.confirm('Reset all test data?')) {
+          localStorage.removeItem('fitforge-clients');
+          localStorage.removeItem('fitforge-groups');
+          localStorage.removeItem('fitforge-requests');
+          window.location.reload();
+        }
+      }} style={{ width: '100%', padding: 12, marginBottom: 8, background: 'transparent', border: `1px solid ${colors.warning}50`, borderRadius: 10, color: colors.warning, fontSize: 12, cursor: 'pointer' }}>🔄 Reset Test Data</button>
+      <button onClick={() => { setUserType(null); setLoggedInUser(null); setCurrentView('login'); setShowMobileMenu(false); }} style={{ width: '100%', padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.textMuted, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><LogOut size={18} /> Sign Out</button>
     </div>
   );
 
@@ -2357,7 +2430,7 @@ const FitnessApp = () => {
 
     return (
       <div>
-        <div style={{ marginBottom: 32 }}><h1 style={{ fontSize: 28, fontWeight: 800, color: colors.text, margin: 0, fontFamily: 'Outfit' }}>Welcome, {loggedInUser?.name}! 👋</h1><p style={{ color: colors.textMuted, marginTop: 8 }}>Here's your fitness community overview</p></div>
+        <div style={{ marginBottom: isMobile ? 20 : 32 }}><h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: colors.text, margin: 0, fontFamily: 'Outfit' }}>Welcome{isMobile ? '' : `, ${loggedInUser?.name}`}! 👋</h1><p style={{ color: colors.textMuted, marginTop: 8, fontSize: isMobile ? 13 : 14 }}>Here's your fitness community overview</p></div>
 
         {/* Reassessment Alerts */}
         {(clientsRequestedReassessment.length > 0 || clientsDueForReassessment.length > 0) && (
@@ -2415,18 +2488,18 @@ const FitnessApp = () => {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 20, marginBottom: 32 }}>
           {[{ label: 'Clients', value: clients.length, icon: Users, color: colors.primary, sub: '+3 this month' }, { label: 'Workouts', value: totalWorkouts, icon: Dumbbell, color: colors.secondary, sub: '+12 this week' }, { label: 'Compliance', value: `${avgCompliance}%`, icon: Target, color: colors.success, sub: '+5% vs last month' }, { label: 'Groups', value: groups.length, icon: Flag, color: colors.accent, sub: '2 challenges' }].map((s, i) => (
-            <div key={i} style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}`, position: 'relative', overflow: 'hidden' }}>
+            <div key={i} style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}`, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, background: `${s.color}10`, borderRadius: '50%' }} />
-              <div style={{ width: 48, height: 48, background: `${s.color}20`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}><s.icon size={24} color={s.color} /></div>
-              <p style={{ color: colors.textMuted, fontSize: 13, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</p>
-              <p style={{ color: colors.text, fontSize: 32, fontWeight: 800, margin: '8px 0 4px', fontFamily: 'Outfit' }}>{s.value}</p>
-              <p style={{ color: s.color, fontSize: 12, margin: 0, fontWeight: 500 }}>{s.sub}</p>
+              <div style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, background: `${s.color}20`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 12 : 16 }}><s.icon size={isMobile ? 20 : 24} color={s.color} /></div>
+              <p style={{ color: colors.textMuted, fontSize: isMobile ? 11 : 13, margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</p>
+              <p style={{ color: colors.text, fontSize: isMobile ? 24 : 32, fontWeight: 800, margin: '8px 0 4px', fontFamily: 'Outfit' }}>{s.value}</p>
+              <p style={{ color: s.color, fontSize: isMobile ? 10 : 12, margin: 0, fontWeight: 500 }}>{s.sub}</p>
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: isMobile ? 16 : 20, marginBottom: 32 }}>
           <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
             <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Weekly Trends</h3>
             <ResponsiveContainer width="100%" height={220}>
@@ -2478,42 +2551,42 @@ const FitnessApp = () => {
 
     return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div><h1 style={{ color: colors.text, margin: 0, fontSize: 26, fontWeight: 800, fontFamily: 'Outfit' }}>Clients</h1><p style={{ color: colors.textMuted, marginTop: 8 }}>{clients.length} enrolled ({clients.filter(c => c.status === 'onboarding').length} onboarding)</p></div>
-        <button onClick={() => setShowNewClientForm(true)} style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}><Plus size={18} style={{ marginRight: 8 }} />Add Client</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 20 : 32, flexWrap: 'wrap', gap: 12 }}>
+        <div><h1 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 20 : 26, fontWeight: 800, fontFamily: 'Outfit' }}>Clients</h1><p style={{ color: colors.textMuted, marginTop: 4, fontSize: isMobile ? 12 : 14 }}>{clients.length} enrolled ({clients.filter(c => c.status === 'onboarding').length} onboarding)</p></div>
+        <button onClick={() => setShowNewClientForm(true)} style={{ padding: isMobile ? '10px 16px' : '12px 24px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: isMobile ? 13 : 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Plus size={isMobile ? 16 : 18} style={{ marginRight: 6 }} />{isMobile ? 'Add' : 'Add Client'}</button>
       </div>
       {clients.map(c => (
-        <div key={c.id} onClick={() => { setSelectedClient(c); setCurrentView('client-detail'); }} style={{ background: colors.cardBg, borderRadius: 16, padding: 20, border: `1px solid ${c.status === 'onboarding' ? colors.warning : colors.borderColor}`, marginBottom: 16, cursor: 'pointer' }}>
+        <div key={c.id} onClick={() => { setSelectedClient(c); setCurrentView('client-detail'); }} style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 14 : 20, border: `1px solid ${c.status === 'onboarding' ? colors.warning : colors.borderColor}`, marginBottom: isMobile ? 12 : 16, cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 18, position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16, flex: 1, minWidth: 0 }}>
+              <div style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: isMobile ? 10 : 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: isMobile ? 14 : 18, position: 'relative', flexShrink: 0 }}>
                 {c.name.split(' ').map(n => n[0]).join('')}
-                {c.status === 'onboarding' && <div style={{ position: 'absolute', bottom: -4, right: -4, width: 20, height: 20, borderRadius: '50%', background: colors.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${colors.cardBg}` }}><AlertTriangle size={10} color="white" /></div>}
+                {c.status === 'onboarding' && <div style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: colors.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${colors.cardBg}` }}><AlertTriangle size={8} color="white" /></div>}
               </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}>{c.name}</h3>
-                  {c.status === 'onboarding' && <span style={{ background: `${colors.warning}20`, color: colors.warning, padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600 }}>ONBOARDING</span>}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <h3 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</h3>
+                  {c.status === 'onboarding' && <span style={{ background: `${colors.warning}20`, color: colors.warning, padding: '2px 6px', borderRadius: 8, fontSize: 9, fontWeight: 600 }}>ONBOARDING</span>}
                 </div>
-                <p style={{ color: colors.textMuted, margin: '4px 0', fontSize: 13 }}>{c.email}</p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ background: `${colors.primary}15`, color: colors.primary, padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>{c.gender === 'female' ? '♀' : '♂'} {c.age || '—'}y</span>
-                  <span style={{ background: `${colors.secondary}15`, color: colors.secondary, padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500, textTransform: 'capitalize' }}>{c.fitnessLevel}</span>
-                  {c.group && <span style={{ background: `${colors.accent}15`, color: colors.accent, padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>{c.group}</span>}
+                {!isMobile && <p style={{ color: colors.textMuted, margin: '4px 0', fontSize: 13 }}>{c.email}</p>}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: isMobile ? 4 : 0 }}>
+                  <span style={{ background: `${colors.primary}15`, color: colors.primary, padding: '2px 8px', borderRadius: 10, fontSize: isMobile ? 10 : 11, fontWeight: 500 }}>{c.gender === 'female' ? '♀' : '♂'} {c.age || '—'}y</span>
+                  <span style={{ background: `${colors.secondary}15`, color: colors.secondary, padding: '2px 8px', borderRadius: 10, fontSize: isMobile ? 10 : 11, fontWeight: 500, textTransform: 'capitalize' }}>{c.fitnessLevel}</span>
+                  {c.group && !isMobile && <span style={{ background: `${colors.accent}15`, color: colors.accent, padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 500 }}>{c.group}</span>}
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16, flexShrink: 0 }}>
               {c.status === 'onboarding' ? (
-                <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Setup</p><p style={{ color: colors.warning, margin: 0, fontSize: 18, fontWeight: 700 }}>{c.onboardingComplete ? Object.values(c.onboardingComplete).filter(Boolean).length : 0}/5</p></div>
+                <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: isMobile ? 9 : 11 }}>Setup</p><p style={{ color: colors.warning, margin: 0, fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>{c.onboardingComplete ? Object.values(c.onboardingComplete).filter(Boolean).length : 0}/5</p></div>
               ) : (
                 <>
-                  <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Week</p><p style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>{c.currentWeek}</p></div>
-                  <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Workouts</p><p style={{ color: colors.primary, margin: 0, fontSize: 20, fontWeight: 700 }}>{c.weeklyLogs.reduce((a, l) => a + l.workoutsCompleted, 0)}</p></div>
+                  <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: isMobile ? 9 : 11 }}>Week</p><p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 16 : 20, fontWeight: 700 }}>{c.currentWeek}</p></div>
+                  {!isMobile && <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 11 }}>Workouts</p><p style={{ color: colors.primary, margin: 0, fontSize: 20, fontWeight: 700 }}>{c.weeklyLogs.reduce((a, l) => a + l.workoutsCompleted, 0)}</p></div>}
                 </>
               )}
-              <button onClick={(e) => deleteClient(c.id, e)} style={{ padding: 8, background: `${colors.danger}15`, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete client"><X size={16} color={colors.danger} /></button>
-              <ChevronRight size={24} color={colors.textMuted} />
+              <button onClick={(e) => deleteClient(c.id, e)} style={{ padding: isMobile ? 6 : 8, background: `${colors.danger}15`, border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete client"><X size={isMobile ? 14 : 16} color={colors.danger} /></button>
+              <ChevronRight size={isMobile ? 20 : 24} color={colors.textMuted} />
             </div>
           </div>
         </div>
@@ -2802,31 +2875,31 @@ const FitnessApp = () => {
 
     return (
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-          <div style={{ display: 'flex', gap: 20 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 28 }}>{client.name.split(' ').map(n => n[0]).join('')}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'flex-start', marginBottom: isMobile ? 20 : 32, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 0 }}>
+          <div style={{ display: 'flex', gap: isMobile ? 12 : 20 }}>
+            <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: isMobile ? 12 : 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: isMobile ? 20 : 28, flexShrink: 0 }}>{client.name.split(' ').map(n => n[0]).join('')}</div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h1 style={{ color: colors.text, margin: 0, fontSize: 26, fontWeight: 700, fontFamily: 'Outfit' }}>{client.name}</h1>
-                {client.status === 'onboarding' && <span style={{ background: `${colors.warning}20`, color: colors.warning, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>Onboarding</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h1 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 18 : 26, fontWeight: 700, fontFamily: 'Outfit' }}>{client.name}</h1>
+                {client.status === 'onboarding' && <span style={{ background: `${colors.warning}20`, color: colors.warning, padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600 }}>Onboarding</span>}
               </div>
-              <p style={{ color: colors.textMuted, margin: '6px 0', fontSize: 14 }}>{client.email}</p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <span style={{ background: `${colors.primary}20`, color: colors.primary, padding: '4px 12px', borderRadius: 20, fontSize: 12 }}>{client.gender === 'female' ? '♀' : '♂'} {client.age || '—'}y</span>
-                <span style={{ background: `${colors.secondary}20`, color: colors.secondary, padding: '4px 12px', borderRadius: 20, fontSize: 12, textTransform: 'capitalize' }}>{client.fitnessLevel}</span>
-                {client.group && <span style={{ background: `${colors.accent}20`, color: colors.accent, padding: '4px 12px', borderRadius: 20, fontSize: 12 }}>{client.group}</span>}
+              {!isMobile && <p style={{ color: colors.textMuted, margin: '6px 0', fontSize: 14 }}>{client.email}</p>}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: isMobile ? 6 : 0 }}>
+                <span style={{ background: `${colors.primary}20`, color: colors.primary, padding: '3px 10px', borderRadius: 16, fontSize: 11 }}>{client.gender === 'female' ? '♀' : '♂'} {client.age || '—'}y</span>
+                <span style={{ background: `${colors.secondary}20`, color: colors.secondary, padding: '3px 10px', borderRadius: 16, fontSize: 11, textTransform: 'capitalize' }}>{client.fitnessLevel}</span>
+                {client.group && !isMobile && <span style={{ background: `${colors.accent}20`, color: colors.accent, padding: '3px 10px', borderRadius: 16, fontSize: 11 }}>{client.group}</span>}
               </div>
             </div>
           </div>
-          {client.status === 'active' && <button style={{ padding: '12px 20px', background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, cursor: 'pointer' }}><Download size={18} style={{ marginRight: 8 }} />Export</button>}
+          {client.status === 'active' && !isMobile && <button style={{ padding: '12px 20px', background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, cursor: 'pointer' }}><Download size={18} style={{ marginRight: 8 }} />Export</button>}
         </div>
 
         {/* Onboarding Progress Bar */}
         {client.status === 'onboarding' && (
-          <div style={{ background: `${colors.warning}15`, borderRadius: 12, padding: 16, marginBottom: 24, border: `1px solid ${colors.warning}30` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ color: colors.text, fontWeight: 600 }}>Onboarding Progress</span>
-              <span style={{ color: colors.warning, fontWeight: 700 }}>{completedSteps}/{totalSteps} complete</span>
+          <div style={{ background: `${colors.warning}15`, borderRadius: 12, padding: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24, border: `1px solid ${colors.warning}30` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <span style={{ color: colors.text, fontWeight: 600, fontSize: isMobile ? 13 : 14 }}>Onboarding Progress</span>
+              <span style={{ color: colors.warning, fontWeight: 700, fontSize: isMobile ? 13 : 14 }}>{completedSteps}/{totalSteps}</span>
             </div>
             <div style={{ background: colors.darker, borderRadius: 6, height: 8 }}>
               <div style={{ width: `${(completedSteps/totalSteps) * 100}%`, height: '100%', background: `linear-gradient(90deg, ${colors.warning}, ${colors.success})`, borderRadius: 6, transition: 'width 0.3s' }} />
@@ -2834,9 +2907,9 @@ const FitnessApp = () => {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 4, background: colors.darker, padding: 4, borderRadius: 12, marginBottom: 24 }}>
-          {client.status === 'onboarding' && <button onClick={() => setTab('onboarding')} style={{ flex: 1, padding: 12, background: tab === 'onboarding' ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === 'onboarding' ? colors.text : colors.textMuted, fontSize: 14, fontWeight: tab === 'onboarding' ? 600 : 400, cursor: 'pointer' }}>Setup</button>}
-          {['overview', 'workout', 'progress', 'nutrition'].map(t => <button key={t} onClick={() => setTab(t)} disabled={client.status === 'onboarding' && t !== 'overview'} style={{ flex: 1, padding: 12, background: tab === t ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === t ? colors.text : colors.textMuted, fontSize: 14, fontWeight: tab === t ? 600 : 400, cursor: client.status === 'onboarding' && t !== 'overview' ? 'not-allowed' : 'pointer', opacity: client.status === 'onboarding' && t !== 'overview' ? 0.5 : 1, textTransform: 'capitalize' }}>{t}</button>)}
+        <div style={{ display: 'flex', gap: 4, background: colors.darker, padding: 4, borderRadius: 12, marginBottom: isMobile ? 16 : 24, overflowX: 'auto' }}>
+          {client.status === 'onboarding' && <button onClick={() => setTab('onboarding')} style={{ flex: isMobile ? 'none' : 1, padding: isMobile ? '10px 14px' : 12, background: tab === 'onboarding' ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === 'onboarding' ? colors.text : colors.textMuted, fontSize: isMobile ? 12 : 14, fontWeight: tab === 'onboarding' ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>Setup</button>}
+          {['overview', 'workout', 'progress', 'nutrition'].map(t => <button key={t} onClick={() => setTab(t)} disabled={client.status === 'onboarding' && t !== 'overview'} style={{ flex: isMobile ? 'none' : 1, padding: isMobile ? '10px 14px' : 12, background: tab === t ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === t ? colors.text : colors.textMuted, fontSize: isMobile ? 12 : 14, fontWeight: tab === t ? 600 : 400, cursor: client.status === 'onboarding' && t !== 'overview' ? 'not-allowed' : 'pointer', opacity: client.status === 'onboarding' && t !== 'overview' ? 0.5 : 1, textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{t}</button>)}
         </div>
 
         {/* Onboarding Tab */}
@@ -2883,14 +2956,14 @@ const FitnessApp = () => {
                 </div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20, marginBottom: isMobile ? 16 : 24 }}>
               {/* Lifestyle */}
-              <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-                <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Lifestyle</h3>
+              <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+                <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Lifestyle</h3>
                 {client.lifestyle ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr', gap: isMobile ? 12 : 16 }}>
                     {[{ i: Briefcase, l: 'Job', v: client.lifestyle.occupation }, { i: Monitor, l: 'Type', v: `${client.lifestyle.workType} (${client.lifestyle.hoursSeated}h)` }, { i: Moon, l: 'Sleep', v: `${client.lifestyle.sleepHours}h` }, { i: Zap, l: 'Stress', v: `${client.lifestyle.stressLevel}/10` }].map((x, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: `${colors.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><x.i size={18} color={colors.primary} /></div><div><p style={{ color: colors.textMuted, margin: 0, fontSize: 12 }}>{x.l}</p><p style={{ color: colors.text, margin: '2px 0 0', fontSize: 14, fontWeight: 500, textTransform: 'capitalize' }}>{x.v}</p></div></div>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}><div style={{ width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, borderRadius: 8, background: `${colors.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><x.i size={isMobile ? 14 : 18} color={colors.primary} /></div><div><p style={{ color: colors.textMuted, margin: 0, fontSize: isMobile ? 10 : 12 }}>{x.l}</p><p style={{ color: colors.text, margin: '2px 0 0', fontSize: isMobile ? 12 : 14, fontWeight: 500, textTransform: 'capitalize' }}>{x.v}</p></div></div>
                     ))}
                   </div>
                 ) : (
@@ -2901,8 +2974,8 @@ const FitnessApp = () => {
                 )}
               </div>
               {/* Injuries */}
-              <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-                <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Injuries</h3>
+              <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+                <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Injuries</h3>
                 {client.onboardingComplete?.injuries ? (
                   client.injuries.length === 0 ? <div style={{ textAlign: 'center', padding: 20, background: `${colors.success}10`, borderRadius: 12 }}><Check size={24} color={colors.success} /><p style={{ color: colors.success, margin: '8px 0 0', fontWeight: 500 }}>None reported</p></div> : client.injuries.map((inj, i) => (
                     <div key={i} style={{ background: colors.darker, borderRadius: 10, padding: 14, marginBottom: 10, borderLeft: `3px solid ${inj.status === 'managing' ? colors.warning : colors.success}` }}>
@@ -2918,10 +2991,10 @@ const FitnessApp = () => {
                 )}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20 }}>
               {/* Goals */}
-              <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-                <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Goals</h3>
+              <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+                <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Goals</h3>
                 {((client.goals && client.goals.length > 0) || (client.runnerGoals && client.runnerGoals.length > 0)) ? (
                   <>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -3909,13 +3982,13 @@ const FitnessApp = () => {
     };
 
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-        <div style={{ background: colors.cardBg, borderRadius: 20, width: '90%', maxWidth: 550, maxHeight: '90vh', overflow: 'auto', padding: 32 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}><h2 style={{ color: colors.text, margin: 0, fontSize: 22, fontWeight: 700 }}>New Client</h2><button onClick={() => setShowNewClientForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button></div>
-          <p style={{ color: colors.textMuted, marginBottom: 24, fontSize: 14 }}>Enter basic info. You'll complete their full profile in the onboarding wizard.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-            <div style={{ gridColumn: 'span 2' }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Full Name *</label><input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Jane Smith" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} /></div>
-            <div style={{ gridColumn: 'span 2' }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Email *</label><input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jane@example.com" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} /></div>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: isMobile ? 16 : 0 }}>
+        <div style={{ background: colors.cardBg, borderRadius: 20, width: isMobile ? '100%' : '90%', maxWidth: 550, maxHeight: '90vh', overflow: 'auto', padding: isMobile ? 20 : 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}><h2 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>New Client</h2><button onClick={() => setShowNewClientForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button></div>
+          <p style={{ color: colors.textMuted, marginBottom: 20, fontSize: isMobile ? 12 : 14 }}>Enter basic info. You'll complete their full profile in the onboarding wizard.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Full Name *</label><input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Jane Smith" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} /></div>
+            <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Email *</label><input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jane@example.com" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} /></div>
             <div><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Gender *</label><div style={{ display: 'flex', gap: 12 }}>{['female', 'male'].map(g => <button key={g} onClick={() => setForm({...form, gender: g})} style={{ flex: 1, padding: 12, background: form.gender === g ? colors.primary : colors.darker, border: `1px solid ${form.gender === g ? colors.primary : colors.borderColor}`, borderRadius: 10, color: form.gender === g ? 'white' : colors.text, fontSize: 14, cursor: 'pointer', textTransform: 'capitalize' }}>{g}</button>)}</div></div>
             <div><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Age</label><input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="Optional" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} /></div>
             <div><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Group (Optional)</label><select value={form.group} onChange={e => setForm({...form, group: e.target.value, selectedChallenges: []})} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }}><option value="">None</option>{groups.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}</select></div>
@@ -4633,12 +4706,15 @@ const FitnessApp = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; }`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } @media (max-width: 768px) { .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; } .responsive-grid-2 { grid-template-columns: 1fr !important; } }`}</style>
       <PTSidebar />
-      <div style={{ marginLeft: 260, padding: 32 }}>
+      <PTMobileHeader />
+      <PTMobileMenu />
+      <div style={{ marginLeft: isMobile ? 0 : 260, padding: isMobile ? '76px 16px 86px' : 32 }}>
         {selectedClient && <button onClick={() => setSelectedClient(null)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: colors.textMuted, fontSize: 14, cursor: 'pointer', marginBottom: 24 }}>← Back</button>}
         {renderPT()}
       </div>
+      <PTMobileNav />
       {showNewClientForm && <NewClientForm />}
       {showNewGroupForm && <NewGroupForm />}
       {selectedExercise && <ExerciseModal exercise={selectedExercise} onClose={() => setSelectedExercise(null)} />}
