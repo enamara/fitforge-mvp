@@ -1015,8 +1015,8 @@ const FitnessApp = () => {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.darker} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: isMobile ? 16 : 0 }}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap');`}</style>
+      <div style={{ minHeight: '100vh', background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.darker} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: isMobile ? 16 : 0, overflowX: 'hidden' }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; } body { margin: 0; overflow-x: hidden; }`}</style>
         <div style={{ width: '100%', maxWidth: 420, padding: isMobile ? 20 : 40 }}>
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 24 : 40 }}>
             <div style={{ width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: isMobile ? 14 : 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><Dumbbell size={isMobile ? 28 : 36} color="white" /></div>
@@ -1025,8 +1025,9 @@ const FitnessApp = () => {
           </div>
           <div style={{ display: 'flex', background: colors.darker, borderRadius: 12, padding: 4, marginBottom: isMobile ? 16 : 24 }}>
             {['client', 'corporate', 'pt'].map(t => (
-              <button key={t} onClick={() => { setLoginType(t); setError(''); }} style={{ flex: 1, padding: isMobile ? 10 : 12, background: loginType === t ? colors.primary : 'transparent', border: 'none', borderRadius: 10, color: loginType === t ? 'white' : colors.textMuted, fontSize: isMobile ? 11 : 13, fontWeight: 600, cursor: 'pointer' }}>
-                {t === 'client' ? (isMobile ? '👤' : '👤 Client') : t === 'corporate' ? (isMobile ? '🏢' : '🏢 Corporate') : (isMobile ? '📋' : '📋 PT')}
+              <button key={t} onClick={() => { setLoginType(t); setError(''); }} style={{ flex: 1, padding: isMobile ? 10 : 12, background: loginType === t ? colors.primary : 'transparent', border: 'none', borderRadius: 10, color: loginType === t ? 'white' : colors.textMuted, fontSize: isMobile ? 11 : 13, fontWeight: 600, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span>{t === 'client' ? '👤' : t === 'corporate' ? '🏢' : '📋'}</span>
+                <span style={{ fontSize: isMobile ? 9 : 12 }}>{t === 'client' ? 'Client' : t === 'corporate' ? 'Corp' : 'PT'}</span>
               </button>
             ))}
           </div>
@@ -1453,43 +1454,43 @@ const FitnessApp = () => {
     return (
       <>
         {/* Summary Card */}
-        <div style={{ background: `linear-gradient(135deg, ${colors.secondary}, ${colors.accent})`, borderRadius: 20, padding: 28, marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ background: `linear-gradient(135deg, ${colors.secondary}, ${colors.accent})`, borderRadius: 20, padding: isMobile ? 20 : 28, marginBottom: isMobile ? 16 : 24, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-          <Utensils size={32} color="white" style={{ marginBottom: 12 }} />
-          <h2 style={{ color: 'white', margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>Your Personalized Nutrition Plan</h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: 14 }}>{nutritionPlan.summary}</p>
+          <Utensils size={isMobile ? 24 : 32} color="white" style={{ marginBottom: 12 }} />
+          <h2 style={{ color: 'white', margin: '0 0 8px', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>Your Personalized Nutrition Plan</h2>
+          <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: isMobile ? 12 : 14 }}>{nutritionPlan.summary}</p>
         </div>
 
         {/* Macro Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          <div style={{ background: colors.cardBg, borderRadius: 14, padding: 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
-            <Flame size={24} color={colors.primary} style={{ marginBottom: 8 }} />
-            <p style={{ color: colors.text, margin: 0, fontSize: 28, fontWeight: 800 }}>{nutritionPlan.calories.target}</p>
-            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>Daily Calories</p>
-            {nutritionPlan.calories.deficit > 0 && <p style={{ color: colors.secondary, margin: '4px 0 0', fontSize: 11 }}>-{nutritionPlan.calories.deficit} cal deficit</p>}
-            {nutritionPlan.calories.surplus > 0 && <p style={{ color: colors.success, margin: '4px 0 0', fontSize: 11 }}>+{nutritionPlan.calories.surplus} cal surplus</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16, marginBottom: isMobile ? 16 : 24 }}>
+          <div style={{ background: colors.cardBg, borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
+            <Flame size={isMobile ? 20 : 24} color={colors.primary} style={{ marginBottom: 8 }} />
+            <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 22 : 28, fontWeight: 800 }}>{nutritionPlan.calories.target}</p>
+            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 10 : 12 }}>Daily Calories</p>
+            {nutritionPlan.calories.deficit > 0 && <p style={{ color: colors.secondary, margin: '4px 0 0', fontSize: isMobile ? 9 : 11 }}>-{nutritionPlan.calories.deficit} cal deficit</p>}
+            {nutritionPlan.calories.surplus > 0 && <p style={{ color: colors.success, margin: '4px 0 0', fontSize: isMobile ? 9 : 11 }}>+{nutritionPlan.calories.surplus} cal surplus</p>}
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 14, padding: 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
-            <div style={{ width: 24, height: 24, background: colors.danger, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 12 }}>P</div>
-            <p style={{ color: colors.text, margin: 0, fontSize: 28, fontWeight: 800 }}>{nutritionPlan.macros.protein}g</p>
-            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>Protein</p>
+          <div style={{ background: colors.cardBg, borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
+            <div style={{ width: isMobile ? 20 : 24, height: isMobile ? 20 : 24, background: colors.danger, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: isMobile ? 10 : 12 }}>P</div>
+            <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 22 : 28, fontWeight: 800 }}>{nutritionPlan.macros.protein}g</p>
+            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 10 : 12 }}>Protein</p>
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 14, padding: 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
-            <div style={{ width: 24, height: 24, background: colors.warning, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 12 }}>C</div>
-            <p style={{ color: colors.text, margin: 0, fontSize: 28, fontWeight: 800 }}>{nutritionPlan.macros.carbs}g</p>
-            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>Carbs</p>
+          <div style={{ background: colors.cardBg, borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
+            <div style={{ width: isMobile ? 20 : 24, height: isMobile ? 20 : 24, background: colors.warning, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: isMobile ? 10 : 12 }}>C</div>
+            <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 22 : 28, fontWeight: 800 }}>{nutritionPlan.macros.carbs}g</p>
+            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 10 : 12 }}>Carbs</p>
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 14, padding: 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
-            <div style={{ width: 24, height: 24, background: colors.accent, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.dark, fontWeight: 700, fontSize: 12 }}>F</div>
-            <p style={{ color: colors.text, margin: 0, fontSize: 28, fontWeight: 800 }}>{nutritionPlan.macros.fat}g</p>
-            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>Fat</p>
+          <div style={{ background: colors.cardBg, borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
+            <div style={{ width: isMobile ? 20 : 24, height: isMobile ? 20 : 24, background: colors.accent, borderRadius: 6, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.dark, fontWeight: 700, fontSize: isMobile ? 10 : 12 }}>F</div>
+            <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 22 : 28, fontWeight: 800 }}>{nutritionPlan.macros.fat}g</p>
+            <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 10 : 12 }}>Fat</p>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
           {[{ id: 'overview', label: 'Overview' }, { id: 'meals', label: 'Sample Meals' }, { id: 'timing', label: 'Meal Timing' }, { id: 'supplements', label: 'Supplements' }, { id: 'hydration', label: 'Hydration' }].map(t => (
-            <button key={t.id} onClick={() => setActiveSection(t.id)} style={{ padding: '10px 18px', background: activeSection === t.id ? colors.secondary : colors.cardBg, border: `1px solid ${activeSection === t.id ? colors.secondary : colors.borderColor}`, borderRadius: 10, color: activeSection === t.id ? 'white' : colors.text, fontSize: 13, fontWeight: activeSection === t.id ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>{t.label}</button>
+            <button key={t.id} onClick={() => setActiveSection(t.id)} style={{ padding: isMobile ? '8px 12px' : '10px 18px', background: activeSection === t.id ? colors.secondary : colors.cardBg, border: `1px solid ${activeSection === t.id ? colors.secondary : colors.borderColor}`, borderRadius: 10, color: activeSection === t.id ? 'white' : colors.text, fontSize: isMobile ? 11 : 13, fontWeight: activeSection === t.id ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.label}</button>
           ))}
         </div>
 
@@ -1868,8 +1869,8 @@ const FitnessApp = () => {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif' }}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap');`}</style>
+      <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; } body { margin: 0; overflow-x: hidden; }`}</style>
         <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, padding: isMobile ? '16px' : '24px 32px', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
@@ -2499,24 +2500,24 @@ const FitnessApp = () => {
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: isMobile ? 16 : 20, marginBottom: 32 }}>
-          <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Weekly Trends</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={weeklyData}><defs><linearGradient id="cW" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={colors.primary} stopOpacity={0.3}/><stop offset="95%" stopColor={colors.primary} stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke={colors.borderColor} /><XAxis dataKey="week" stroke={colors.textMuted} fontSize={12} /><YAxis stroke={colors.textMuted} fontSize={12} /><Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8 }} /><Area type="monotone" dataKey="workouts" stroke={colors.primary} fill="url(#cW)" strokeWidth={2} /></AreaChart>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: isMobile ? 16 : 20, marginBottom: isMobile ? 24 : 32 }}>
+          <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Weekly Trends</h3>
+            <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
+              <AreaChart data={weeklyData}><defs><linearGradient id="cW" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={colors.primary} stopOpacity={0.3}/><stop offset="95%" stopColor={colors.primary} stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke={colors.borderColor} /><XAxis dataKey="week" stroke={colors.textMuted} fontSize={isMobile ? 10 : 12} /><YAxis stroke={colors.textMuted} fontSize={isMobile ? 10 : 12} /><Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8 }} /><Area type="monotone" dataKey="workouts" stroke={colors.primary} fill="url(#cW)" strokeWidth={2} /></AreaChart>
             </ResponsiveContainer>
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Groups</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart><Pie data={groups.map(g => ({ name: g.name, value: g.members }))} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">{groups.map((_, i) => <Cell key={i} fill={[colors.primary, colors.secondary][i]} />)}</Pie><Tooltip /></PieChart>
+          <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Groups</h3>
+            <ResponsiveContainer width="100%" height={isMobile ? 150 : 220}>
+              <PieChart><Pie data={groups.map(g => ({ name: g.name, value: g.members || 1 }))} innerRadius={isMobile ? 35 : 50} outerRadius={isMobile ? 60 : 80} paddingAngle={5} dataKey="value">{groups.map((_, i) => <Cell key={i} fill={[colors.primary, colors.secondary, colors.accent][i % 3]} />)}</Pie><Tooltip /></PieChart>
             </ResponsiveContainer>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>{groups.map((g, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: [colors.primary, colors.secondary][i] }} /><span style={{ color: colors.textMuted, fontSize: 12 }}>{g.name}</span></div>)}</div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 12 : 16, flexWrap: 'wrap' }}>{groups.map((g, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: [colors.primary, colors.secondary, colors.accent][i % 3] }} /><span style={{ color: colors.textMuted, fontSize: isMobile ? 10 : 12 }}>{g.name}</span></div>)}</div>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Recent Activity</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20 }}>
+          <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+            <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Recent Activity</h3>
             {clients.slice(0, 3).map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 2 ? `1px solid ${colors.borderColor}` : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -2527,11 +2528,11 @@ const FitnessApp = () => {
               </div>
             ))}
           </div>
-          <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
-            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: 16, fontWeight: 600 }}>Quick Actions</h3>
+          <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
+            <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>Quick Actions</h3>
             {[{ icon: Plus, label: 'Add Client', action: () => setShowNewClientForm(true), color: colors.primary }, { icon: FileText, label: 'Generate Report', action: () => setCurrentView('reports'), color: colors.secondary }, { icon: Clipboard, label: 'Assessments', action: () => setCurrentView('assessments'), color: colors.accent }].map((a, i) => (
-              <button key={i} onClick={a.action} style={{ width: '100%', padding: 16, marginBottom: 10, background: `${a.color}10`, border: `1px solid ${a.color}30`, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
-                <a.icon size={20} color={a.color} /><span style={{ color: colors.text, fontWeight: 500, fontSize: 14 }}>{a.label}</span><ChevronRight size={18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+              <button key={i} onClick={a.action} style={{ width: '100%', padding: isMobile ? 12 : 16, marginBottom: isMobile ? 8 : 10, background: `${a.color}10`, border: `1px solid ${a.color}30`, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <a.icon size={isMobile ? 18 : 20} color={a.color} /><span style={{ color: colors.text, fontWeight: 500, fontSize: isMobile ? 13 : 14 }}>{a.label}</span><ChevronRight size={isMobile ? 16 : 18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
               </button>
             ))}
           </div>
@@ -4705,12 +4706,12 @@ const FitnessApp = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } @media (max-width: 768px) { .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; } .responsive-grid-2 { grid-template-columns: 1fr !important; } }`}</style>
+    <div style={{ minHeight: '100vh', background: colors.dark, fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } body { overflow-x: hidden; } @media (max-width: 768px) { .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; } .responsive-grid-2 { grid-template-columns: 1fr !important; } }`}</style>
       <PTSidebar />
       <PTMobileHeader />
       <PTMobileMenu />
-      <div style={{ marginLeft: isMobile ? 0 : 260, padding: isMobile ? '76px 16px 86px' : 32 }}>
+      <div style={{ marginLeft: isMobile ? 0 : 260, padding: isMobile ? '76px 16px 86px' : 32, overflowX: 'hidden' }}>
         {selectedClient && <button onClick={() => setSelectedClient(null)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: colors.textMuted, fontSize: 14, cursor: 'pointer', marginBottom: 24 }}>← Back</button>}
         {renderPT()}
       </div>
