@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Activity, Users, Target, TrendingUp, Calendar, Heart, Dumbbell, Clock, Award, ChevronRight, ChevronLeft, Plus, Check, AlertTriangle, User, FileText, Home, BarChart2, Clipboard, Utensils, Shield, Zap, Sun, Moon, Droplets, ArrowRight, Star, Trophy, Flag, Play, Save, X, Download, Briefcase, Monitor, LogIn, LogOut, Eye, Video, Flame, Lock, Mail } from 'lucide-react';
 
@@ -1584,13 +1584,82 @@ const FitnessApp = () => {
   };
 
   // ============ WORKOUT TAB COMPONENT ============
+  // Exercise Log Card - separate component to prevent focus loss
+  const ExerciseLogCard = ({ ex, initialLog, onUpdate, colors }) => {
+    const [log, setLog] = useState(initialLog);
+    
+    const handleChange = (field, value) => {
+      const updated = { ...log, [field]: value };
+      setLog(updated);
+      onUpdate(ex.name, updated);
+    };
+
+    return (
+      <div style={{ background: log.completed ? `${colors.success}15` : colors.darker, borderRadius: 14, padding: 16, marginBottom: 12, border: `2px solid ${log.completed ? colors.success : 'transparent'}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <button 
+            onClick={() => handleChange('completed', !log.completed)}
+            style={{ width: 28, height: 28, borderRadius: 8, background: log.completed ? colors.success : colors.borderColor, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            {log.completed && <Check size={16} color="white" />}
+          </button>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{ex.name}</p>
+            {ex.prescription && <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>Target: {ex.prescription.sets}×{ex.prescription.reps}</p>}
+          </div>
+          <span style={{ fontSize: 24 }}>{ex.demo}</span>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div>
+            <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>WEIGHT (kg)</label>
+            <input 
+              type="number" 
+              value={log.weight || ''} 
+              onChange={e => handleChange('weight', e.target.value)}
+              placeholder="—"
+              style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+            />
+          </div>
+          <div>
+            <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>SETS</label>
+            <input 
+              type="number" 
+              value={log.sets || ''} 
+              onChange={e => handleChange('sets', e.target.value)}
+              placeholder={ex.prescription?.sets || '—'}
+              style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+            />
+          </div>
+          <div>
+            <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>REPS</label>
+            <input 
+              value={log.reps || ''} 
+              onChange={e => handleChange('reps', e.target.value)}
+              placeholder={ex.prescription?.reps || '—'}
+              style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+            />
+          </div>
+        </div>
+        
+        <input 
+          value={log.notes || ''} 
+          onChange={e => handleChange('notes', e.target.value)}
+          placeholder="Add notes (optional)..."
+          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13, marginTop: 8 }} 
+        />
+      </div>
+    );
+  };
+
   const WorkoutTab = ({ client, workout, colors, setSelectedExercise, setClients, clients, setLoggedInUser, workoutViewMode, setWorkoutViewMode }) => {
     const [showAddWorkout, setShowAddWorkout] = useState(false);
     const [editingWorkout, setEditingWorkout] = useState(null);
     const [newWorkout, setNewWorkout] = useState({ day: 'Monday', name: '', type: 'strength', duration: 45, exercises: [] });
     const [newExercise, setNewExercise] = useState({ name: '', sets: 3, reps: '10', notes: '' });
     const [trackingDay, setTrackingDay] = useState(null); // Which day's workout we're logging
-    const [exerciseLogs, setExerciseLogs] = useState({}); // Temp logs while tracking
+    const exerciseLogsRef = useRef({}); // Use ref to avoid re-renders
+    const [completedCount, setCompletedCount] = useState(0); // Only for progress display
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const workoutTypes = [{ id: 'strength', label: 'Strength', icon: '🏋️' }, { id: 'cardio', label: 'Cardio', icon: '🏃' }, { id: 'hybrid', label: 'Hybrid', icon: '⚡' }, { id: 'recovery', label: 'Recovery', icon: '🧘' }];
@@ -1610,31 +1679,33 @@ const FitnessApp = () => {
 
     // Start tracking a workout day
     const startTracking = (day) => {
-      setTrackingDay(day);
       const existingLog = getWorkoutLog(day.day);
       if (existingLog) {
-        // Load existing log data
         const logs = {};
         existingLog.exercises.forEach(ex => {
           logs[ex.name] = ex;
         });
-        setExerciseLogs(logs);
+        exerciseLogsRef.current = logs;
+        setCompletedCount(Object.values(logs).filter(e => e.completed).length);
       } else {
-        // Initialize with empty data for each exercise
         const logs = {};
         day.exercises.forEach(ex => {
           logs[ex.name] = { completed: false, weight: '', reps: '', sets: '', notes: '' };
         });
-        setExerciseLogs(logs);
+        exerciseLogsRef.current = logs;
+        setCompletedCount(0);
       }
+      setTrackingDay(day);
     };
 
-    // Update a single exercise log
-    const updateExerciseLog = (exName, field, value) => {
-      setExerciseLogs(prev => ({
-        ...prev,
-        [exName]: { ...prev[exName], [field]: value }
-      }));
+    // Update exercise log (called by ExerciseLogCard)
+    const handleExerciseUpdate = (exName, data) => {
+      exerciseLogsRef.current[exName] = data;
+      // Only update completed count for progress bar
+      const newCount = Object.values(exerciseLogsRef.current).filter(e => e.completed).length;
+      if (newCount !== completedCount) {
+        setCompletedCount(newCount);
+      }
     };
 
     // Save workout log
@@ -1643,7 +1714,7 @@ const FitnessApp = () => {
         date: todayDate,
         dayName: trackingDay.day,
         workoutName: trackingDay.name,
-        exercises: Object.entries(exerciseLogs).map(([name, data]) => ({ name, ...data })),
+        exercises: Object.entries(exerciseLogsRef.current).map(([name, data]) => ({ name, ...data })),
         completedAt: new Date().toISOString()
       };
 
@@ -1660,7 +1731,8 @@ const FitnessApp = () => {
       setClients(updated);
       setLoggedInUser({ ...client, workoutLogs: updatedLogs });
       setTrackingDay(null);
-      setExerciseLogs({});
+      exerciseLogsRef.current = {};
+      setCompletedCount(0);
     };
 
     const addExercise = () => {
@@ -1701,113 +1773,55 @@ const FitnessApp = () => {
       setShowAddWorkout(true);
     };
 
-    // Workout Tracking Modal
-    const WorkoutTrackingModal = () => {
-      if (!trackingDay) return null;
-      const completedCount = Object.values(exerciseLogs).filter(e => e.completed).length;
-      const totalCount = trackingDay.exercises.length;
-
-      return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Log Workout</h2>
-                <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>{trackingDay.day} • {trackingDay.name}</p>
-              </div>
-              <button onClick={() => setTrackingDay(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
-            </div>
-
-            {/* Progress */}
-            <div style={{ background: colors.darker, borderRadius: 12, padding: 14, marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ color: colors.textMuted, fontSize: 13 }}>Progress</span>
-                <span style={{ color: completedCount === totalCount ? colors.success : colors.text, fontWeight: 600 }}>{completedCount}/{totalCount} exercises</span>
-              </div>
-              <div style={{ height: 6, background: colors.borderColor, borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(completedCount/totalCount)*100}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.success})`, borderRadius: 3, transition: 'width 0.3s' }} />
-              </div>
-            </div>
-
-            {/* Exercises */}
-            <div style={{ marginBottom: 20 }}>
-              {trackingDay.exercises.map((ex, i) => {
-                const log = exerciseLogs[ex.name] || {};
-                return (
-                  <div key={i} style={{ background: log.completed ? `${colors.success}15` : colors.darker, borderRadius: 14, padding: 16, marginBottom: 12, border: `2px solid ${log.completed ? colors.success : 'transparent'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                      <button 
-                        onClick={() => updateExerciseLog(ex.name, 'completed', !log.completed)}
-                        style={{ width: 28, height: 28, borderRadius: 8, background: log.completed ? colors.success : colors.borderColor, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        {log.completed && <Check size={16} color="white" />}
-                      </button>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{ex.name}</p>
-                        {ex.prescription && <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>Target: {ex.prescription.sets}×{ex.prescription.reps}</p>}
-                      </div>
-                      <span style={{ fontSize: 24 }}>{ex.demo}</span>
-                    </div>
-                    
-                    {/* Tracking inputs */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                      <div>
-                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>WEIGHT (kg)</label>
-                        <input 
-                          type="number" 
-                          value={log.weight || ''} 
-                          onChange={e => updateExerciseLog(ex.name, 'weight', e.target.value)}
-                          placeholder="—"
-                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
-                        />
-                      </div>
-                      <div>
-                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>SETS</label>
-                        <input 
-                          type="number" 
-                          value={log.sets || ''} 
-                          onChange={e => updateExerciseLog(ex.name, 'sets', e.target.value)}
-                          placeholder={ex.prescription?.sets || '—'}
-                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
-                        />
-                      </div>
-                      <div>
-                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>REPS</label>
-                        <input 
-                          value={log.reps || ''} 
-                          onChange={e => updateExerciseLog(ex.name, 'reps', e.target.value)}
-                          placeholder={ex.prescription?.reps || '—'}
-                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Notes */}
-                    <input 
-                      value={log.notes || ''} 
-                      onChange={e => updateExerciseLog(ex.name, 'notes', e.target.value)}
-                      placeholder="Add notes (optional)..."
-                      style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13, marginTop: 8 }} 
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            <button 
-              onClick={saveWorkoutLog} 
-              style={{ width: '100%', padding: 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.success})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <Save size={18} style={{ marginRight: 8 }} />Save Workout Log
-            </button>
-          </div>
-        </div>
-      );
-    };
+    const totalCount = trackingDay ? trackingDay.exercises.length : 0;
 
     return (
       <>
-        <WorkoutTrackingModal />
+        {/* Workout Tracking Modal */}
+        {trackingDay && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+            <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Log Workout</h2>
+                  <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>{trackingDay.day} • {trackingDay.name}</p>
+                </div>
+                <button onClick={() => setTrackingDay(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+              </div>
+
+              {/* Progress */}
+              <div style={{ background: colors.darker, borderRadius: 12, padding: 14, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ color: colors.textMuted, fontSize: 13 }}>Progress</span>
+                  <span style={{ color: completedCount === totalCount ? colors.success : colors.text, fontWeight: 600 }}>{completedCount}/{totalCount} exercises</span>
+                </div>
+                <div style={{ height: 6, background: colors.borderColor, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${totalCount > 0 ? (completedCount/totalCount)*100 : 0}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.success})`, borderRadius: 3, transition: 'width 0.3s' }} />
+                </div>
+              </div>
+
+              {/* Exercises - using ExerciseLogCard for stable inputs */}
+              <div style={{ marginBottom: 20 }}>
+                {trackingDay.exercises.map((ex) => (
+                  <ExerciseLogCard
+                    key={ex.name}
+                    ex={ex}
+                    initialLog={exerciseLogsRef.current[ex.name] || { completed: false, weight: '', reps: '', sets: '', notes: '' }}
+                    onUpdate={handleExerciseUpdate}
+                    colors={colors}
+                  />
+                ))}
+              </div>
+
+              <button 
+                onClick={saveWorkoutLog} 
+                style={{ width: '100%', padding: 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.success})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
+              >
+                <Save size={18} style={{ marginRight: 8 }} />Save Workout Log
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Mode Toggle */}
         <div style={{ display: 'flex', gap: 8, background: colors.darker, padding: 4, borderRadius: 12, marginBottom: 24 }}>
