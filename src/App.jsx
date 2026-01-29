@@ -2103,6 +2103,37 @@ const FitnessApp = () => {
         <div style={{ padding: isMobile ? 16 : 32, maxWidth: 1200, margin: '0 auto' }}>
           {activeTab === 'overview' && (
             <>
+              {/* Welcome Banner for New Clients (Week 1-3) */}
+              {client.currentWeek <= 3 && (
+                <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: 16, padding: isMobile ? 16 : 24, marginBottom: isMobile ? 16 : 24, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+                  <div style={{ position: 'absolute', bottom: -40, left: -40, width: 100, height: 100, background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <span style={{ fontSize: 32 }}>🎉</span>
+                    <div>
+                      <h3 style={{ color: 'white', margin: 0, fontSize: isMobile ? 16 : 20, fontWeight: 700 }}>
+                        {client.currentWeek === 1 ? 'Welcome to Your Fitness Journey!' : `Week ${client.currentWeek} — You're Building Momentum!`}
+                      </h3>
+                      <p style={{ color: 'rgba(255,255,255,0.9)', margin: '4px 0 0', fontSize: isMobile ? 12 : 14 }}>
+                        {client.currentWeek === 1 ? 'Your personalized program is ready. Let\'s get started!' : 
+                         client.currentWeek === 2 ? 'Great job on week 1! Consistency is the key to success.' :
+                         'You\'re establishing great habits. Keep it up!'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Onboarding Tips */}
+                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 14 }}>
+                    <p style={{ color: 'white', margin: 0, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>💡 Tip for Week {client.currentWeek}:</p>
+                    <p style={{ color: 'rgba(255,255,255,0.95)', margin: 0, fontSize: 13 }}>
+                      {client.currentWeek === 1 ? 'Start by exploring your Workout tab. Your PT has designed a plan just for you. Don\'t worry about being perfect — just show up!' :
+                       client.currentWeek === 2 ? 'Log your workouts using the "Log" button on each day. Tracking helps you see your progress and helps your PT adjust your program.' :
+                       'Check the Nutrition tab for meal ideas tailored to your goals. Small dietary changes can make a big difference!'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Re-assessment Banner */}
               {isReassessmentDue && (
                 <div style={{ background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, borderRadius: 16, padding: isMobile ? 16 : 24, marginBottom: isMobile ? 16 : 24, position: 'relative', overflow: 'hidden' }}>
@@ -2159,7 +2190,7 @@ const FitnessApp = () => {
                 <div style={{ background: colors.cardBg, borderRadius: 16, padding: isMobile ? 16 : 24, border: `1px solid ${colors.borderColor}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 12 : 20, flexWrap: 'wrap', gap: 8 }}>
                     <h3 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600 }}><Heart size={isMobile ? 16 : 18} color={colors.danger} style={{ marginRight: 8 }} />Health Metrics</h3>
-                    <span style={{ background: `${colors.secondary}15`, padding: '4px 10px', borderRadius: 8, color: colors.secondary, fontSize: isMobile ? 9 : 11 }}>Updated at reassessment</span>
+                    <button onClick={() => { setProfileEditSection('health'); setEditFormData({ weight: client.weight || '', targetWeight: client.targetWeight || '', height: client.height || '' }); setShowProfileEdit(true); }} style={{ background: `${colors.primary}15`, border: 'none', borderRadius: 8, padding: isMobile ? '5px 10px' : '6px 12px', color: colors.primary, fontSize: isMobile ? 11 : 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><FileText size={12} />Edit</button>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : '1fr 1fr', gap: isMobile ? 8 : 12 }}>
                     {[
@@ -2252,8 +2283,18 @@ const FitnessApp = () => {
               <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}`, marginBottom: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <h3 style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 600 }}><Target size={18} color={colors.primary} style={{ marginRight: 8 }} />Your Goals</h3>
-                  <span style={{ background: `${colors.primary}15`, padding: '4px 10px', borderRadius: 8, color: colors.primary, fontSize: 11 }}>Set with your PT</span>
+                  <button onClick={() => { setProfileEditSection('goals'); setEditFormData({ goals: client.goals || [], newGoal: '', fitnessLevel: client.fitnessLevel || 'beginner', isRunner: client.isRunner || false, runnerGoals: client.runnerGoals || [] }); setShowProfileEdit(true); }} style={{ background: `${colors.primary}15`, border: 'none', borderRadius: 8, padding: '6px 12px', color: colors.primary, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><FileText size={12} />Edit</button>
                 </div>
+                
+                {/* Fitness Level Badge */}
+                <div style={{ marginBottom: 16 }}>
+                  <span style={{ background: colors.darker, padding: '8px 14px', borderRadius: 10, color: colors.text, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{client.fitnessLevel === 'beginner' ? '🌱' : client.fitnessLevel === 'intermediate' ? '💪' : '🔥'}</span>
+                    <span style={{ textTransform: 'capitalize' }}>{client.fitnessLevel || 'Not set'}</span>
+                    {client.isRunner && <span style={{ marginLeft: 8, background: `${colors.secondary}20`, padding: '2px 8px', borderRadius: 6, fontSize: 11, color: colors.secondary }}>🏃 Runner</span>}
+                  </span>
+                </div>
+
                 {((client.goals && client.goals.length > 0) || (client.runnerGoals && client.runnerGoals.length > 0)) ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {(client.goals || []).map((g, i) => (
@@ -2264,7 +2305,7 @@ const FitnessApp = () => {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: colors.textMuted, margin: 0 }}>No goals set yet</p>
+                  <p style={{ color: colors.textMuted, margin: 0 }}>No goals set yet — tap Edit to add your goals!</p>
                 )}
               </div>
 
@@ -2355,6 +2396,182 @@ const FitnessApp = () => {
                   style={{ width: '100%', padding: 14, background: (editFormData.noInjuries || editFormData.type) ? `linear-gradient(135deg, ${editFormData.noInjuries ? colors.success : colors.warning}, ${editFormData.noInjuries ? colors.primary : colors.accent})` : colors.borderColor, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: (editFormData.noInjuries || editFormData.type) ? 'pointer' : 'not-allowed' }}
                 >
                   {editFormData.noInjuries ? <><Check size={18} style={{ marginRight: 8 }} />Confirm No Injuries</> : <><Plus size={18} style={{ marginRight: 8 }} />Report Injury</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Profile Edit Modal - Health Metrics */}
+          {showProfileEdit && profileEditSection === 'health' && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+              <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 450, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Edit Health Metrics</h2>
+                  <button onClick={() => setShowProfileEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+                </div>
+
+                {/* Motivational tip */}
+                <div style={{ background: `linear-gradient(135deg, ${colors.primary}15, ${colors.secondary}15)`, borderRadius: 12, padding: 14, marginBottom: 20, border: `1px solid ${colors.primary}20` }}>
+                  <p style={{ color: colors.text, margin: 0, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>💡</span>
+                    <span>Tracking your weight regularly helps you and your PT understand your progress better!</span>
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Current Weight (kg)</label>
+                  <input type="number" value={editFormData.weight || ''} onChange={e => setEditFormData({ ...editFormData, weight: e.target.value })} placeholder="e.g. 75" style={{ width: '100%', padding: 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 16 }} />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Target Weight (kg)</label>
+                  <input type="number" value={editFormData.targetWeight || ''} onChange={e => setEditFormData({ ...editFormData, targetWeight: e.target.value })} placeholder="e.g. 70" style={{ width: '100%', padding: 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 16 }} />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Height (cm) - optional</label>
+                  <input type="number" value={editFormData.height || ''} onChange={e => setEditFormData({ ...editFormData, height: e.target.value })} placeholder="e.g. 175" style={{ width: '100%', padding: 14, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 16 }} />
+                </div>
+
+                {/* Weight progress indicator */}
+                {editFormData.weight && editFormData.targetWeight && (
+                  <div style={{ background: colors.darker, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ color: colors.textMuted, fontSize: 12 }}>Weight Goal Progress</span>
+                      <span style={{ color: colors.text, fontWeight: 600, fontSize: 14 }}>
+                        {Math.abs(parseFloat(editFormData.weight) - parseFloat(editFormData.targetWeight)).toFixed(1)} kg to go
+                      </span>
+                    </div>
+                    <p style={{ color: colors.success, margin: 0, fontSize: 13 }}>
+                      {parseFloat(editFormData.weight) > parseFloat(editFormData.targetWeight) ? '📉 Goal: Lose weight' : parseFloat(editFormData.weight) < parseFloat(editFormData.targetWeight) ? '📈 Goal: Gain weight' : '🎯 You\'re at your target!'}
+                    </p>
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => { 
+                    if (editFormData.weight) updateClientProfile('weight', parseFloat(editFormData.weight));
+                    if (editFormData.targetWeight) updateClientProfile('targetWeight', parseFloat(editFormData.targetWeight));
+                    if (editFormData.height) updateClientProfile('height', parseFloat(editFormData.height));
+                    setShowProfileEdit(false);
+                  }}
+                  style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  <Save size={18} style={{ marginRight: 8 }} />Save Changes
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Profile Edit Modal - Goals */}
+          {showProfileEdit && profileEditSection === 'goals' && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+              <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Edit Your Goals</h2>
+                  <button onClick={() => setShowProfileEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+                </div>
+
+                {/* Motivational tip */}
+                <div style={{ background: `linear-gradient(135deg, ${colors.success}15, ${colors.primary}15)`, borderRadius: 12, padding: 14, marginBottom: 20, border: `1px solid ${colors.success}20` }}>
+                  <p style={{ color: colors.text, margin: 0, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>🎯</span>
+                    <span>Setting clear goals makes you 42% more likely to achieve them. Let's define your success!</span>
+                  </p>
+                </div>
+
+                {/* Fitness Level */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Your Fitness Level</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[
+                      { id: 'beginner', label: 'Beginner', icon: '🌱', desc: 'New to fitness' },
+                      { id: 'intermediate', label: 'Intermediate', icon: '💪', desc: '6+ months' },
+                      { id: 'advanced', label: 'Advanced', icon: '🔥', desc: '2+ years' }
+                    ].map(level => (
+                      <button key={level.id} onClick={() => setEditFormData({...editFormData, fitnessLevel: level.id})} style={{ flex: 1, padding: 14, background: editFormData.fitnessLevel === level.id ? `${colors.primary}20` : colors.darker, border: `2px solid ${editFormData.fitnessLevel === level.id ? colors.primary : 'transparent'}`, borderRadius: 12, cursor: 'pointer', textAlign: 'center' }}>
+                        <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>{level.icon}</span>
+                        <span style={{ color: colors.text, fontSize: 12, fontWeight: 600, display: 'block' }}>{level.label}</span>
+                        <span style={{ color: colors.textMuted, fontSize: 10 }}>{level.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Runner Toggle */}
+                <div style={{ marginBottom: 20 }}>
+                  <div 
+                    onClick={() => setEditFormData({...editFormData, isRunner: !editFormData.isRunner})} 
+                    style={{ background: editFormData.isRunner ? `${colors.secondary}15` : colors.darker, borderRadius: 12, padding: 16, border: `2px solid ${editFormData.isRunner ? colors.secondary : 'transparent'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: editFormData.isRunner ? colors.secondary : colors.borderColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {editFormData.isRunner && <Check size={16} color="white" />}
+                    </div>
+                    <div>
+                      <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 15 }}>🏃 I'm a Runner</p>
+                      <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>Enable running-specific goals and workout tracking</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Current Goals */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Your Fitness Goals</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    {(editFormData.goals || []).map((g, i) => (
+                      <span key={i} style={{ background: `${colors.primary}20`, color: colors.text, padding: '8px 12px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {g}
+                        <button onClick={() => setEditFormData({...editFormData, goals: editFormData.goals.filter((_, idx) => idx !== i)})} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 4 }}><X size={14} color={colors.danger} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input value={editFormData.newGoal || ''} onChange={e => setEditFormData({...editFormData, newGoal: e.target.value})} onKeyPress={e => { if (e.key === 'Enter' && editFormData.newGoal) { setEditFormData({...editFormData, goals: [...(editFormData.goals || []), editFormData.newGoal], newGoal: ''}); }}} placeholder="Add a goal (e.g. Build muscle, Lose fat)" style={{ flex: 1, padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+                    <button onClick={() => { if (editFormData.newGoal) { setEditFormData({...editFormData, goals: [...(editFormData.goals || []), editFormData.newGoal], newGoal: ''}); }}} style={{ padding: '12px 16px', background: colors.primary, border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer' }}><Plus size={18} /></button>
+                  </div>
+                </div>
+
+                {/* Goal Suggestions */}
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ color: colors.textMuted, fontSize: 11, marginBottom: 8 }}>Quick add:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {['Build muscle', 'Lose weight', 'Improve endurance', 'Get stronger', 'Better flexibility', 'Reduce stress', 'More energy'].filter(g => !(editFormData.goals || []).includes(g)).slice(0, 4).map(suggestion => (
+                      <button key={suggestion} onClick={() => setEditFormData({...editFormData, goals: [...(editFormData.goals || []), suggestion]})} style={{ padding: '6px 12px', background: colors.darker, border: `1px dashed ${colors.borderColor}`, borderRadius: 16, color: colors.textMuted, fontSize: 12, cursor: 'pointer' }}>+ {suggestion}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Runner Goals */}
+                {editFormData.isRunner && (
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>🏃 Running Goals</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                      {(editFormData.runnerGoals || []).map((g, i) => (
+                        <span key={i} style={{ background: `${colors.secondary}20`, color: colors.text, padding: '8px 12px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          🏃 {g}
+                          <button onClick={() => setEditFormData({...editFormData, runnerGoals: editFormData.runnerGoals.filter((_, idx) => idx !== i)})} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}><X size={14} color={colors.danger} /></button>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {['Complete 5K', 'Run 10K', 'Half marathon', 'Full marathon', 'Improve pace', 'Run 3x per week'].filter(g => !(editFormData.runnerGoals || []).includes(g)).slice(0, 4).map(suggestion => (
+                        <button key={suggestion} onClick={() => setEditFormData({...editFormData, runnerGoals: [...(editFormData.runnerGoals || []), suggestion]})} style={{ padding: '6px 12px', background: `${colors.secondary}10`, border: `1px dashed ${colors.secondary}40`, borderRadius: 16, color: colors.secondary, fontSize: 12, cursor: 'pointer' }}>+ {suggestion}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => { 
+                    updateClientProfile('fitnessLevel', editFormData.fitnessLevel);
+                    updateClientProfile('goals', editFormData.goals || []);
+                    updateClientProfile('isRunner', editFormData.isRunner);
+                    updateClientProfile('runnerGoals', editFormData.runnerGoals || []);
+                    setShowProfileEdit(false);
+                  }}
+                  style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  <Save size={18} style={{ marginRight: 8 }} />Save Goals
                 </button>
               </div>
             </div>
@@ -2538,14 +2755,66 @@ const FitnessApp = () => {
         </div>
 
         {showLog && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div style={{ background: colors.cardBg, borderRadius: 20, width: '90%', maxWidth: 500, padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}><h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Week {client.currentWeek + 1} Check-in</h2><button onClick={() => setShowLog(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button></div>
-              <div style={{ marginBottom: 24 }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>Energy: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.energy}/10</span></label><input type="range" min="1" max="10" value={logData.energy} onChange={e => setLogData({...logData, energy: parseInt(e.target.value)})} style={{ width: '100%', accentColor: colors.primary }} /></div>
-              <div style={{ marginBottom: 24 }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>Mood: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.mood}/10</span></label><input type="range" min="1" max="10" value={logData.mood} onChange={e => setLogData({...logData, mood: parseInt(e.target.value)})} style={{ width: '100%', accentColor: colors.secondary }} /></div>
-              <div style={{ marginBottom: 24 }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>Workouts: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.workoutsCompleted}</span></label><div style={{ display: 'flex', gap: 8 }}>{[0,1,2,3,4,5,6,7].map(n => <button key={n} onClick={() => setLogData({...logData, workoutsCompleted: n})} style={{ width: 40, height: 40, borderRadius: 8, background: logData.workoutsCompleted === n ? colors.primary : colors.darker, border: 'none', color: logData.workoutsCompleted === n ? 'white' : colors.text, cursor: 'pointer', fontWeight: 600 }}>{n}</button>)}</div></div>
-              <div style={{ marginBottom: 24 }}><label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Notes</label><textarea value={logData.notes} onChange={e => setLogData({...logData, notes: e.target.value})} placeholder="How was your week?" style={{ width: '100%', height: 80, padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, resize: 'none' }} /></div>
-              <button onClick={saveLog} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Save size={18} style={{ marginRight: 8 }} />Save</button>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+            <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Week {client.currentWeek + 1} Check-in</h2>
+                <button onClick={() => setShowLog(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+              </div>
+              
+              {/* Motivational Message */}
+              <div style={{ background: `linear-gradient(135deg, ${colors.primary}15, ${colors.secondary}15)`, borderRadius: 12, padding: 14, marginBottom: 20, border: `1px solid ${colors.primary}20` }}>
+                <p style={{ color: colors.text, margin: 0, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>
+                    {client.weeklyLogs.length === 0 ? '🌟' : 
+                     client.weeklyLogs.length < 4 ? '💪' : 
+                     client.weeklyLogs.length < 8 ? '🔥' : '🏆'}
+                  </span>
+                  <span>
+                    {client.weeklyLogs.length === 0 ? 'Your first check-in! Every journey begins with a single step.' : 
+                     client.weeklyLogs.length < 4 ? `${client.weeklyLogs.length} weeks logged! You're building great habits.` : 
+                     client.weeklyLogs.length < 8 ? 'You\'re on a roll! Consistency is your superpower.' : 
+                     `${client.weeklyLogs.length} weeks strong! You're an inspiration.`}
+                  </span>
+                </p>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>
+                  Energy Level: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.energy}/10</span>
+                  <span style={{ marginLeft: 8, fontSize: 16 }}>{logData.energy >= 8 ? '⚡' : logData.energy >= 5 ? '😊' : '😴'}</span>
+                </label>
+                <input type="range" min="1" max="10" value={logData.energy} onChange={e => setLogData({...logData, energy: parseInt(e.target.value)})} style={{ width: '100%', accentColor: colors.primary }} />
+              </div>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>
+                  Mood: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.mood}/10</span>
+                  <span style={{ marginLeft: 8, fontSize: 16 }}>{logData.mood >= 8 ? '😄' : logData.mood >= 5 ? '🙂' : '😔'}</span>
+                </label>
+                <input type="range" min="1" max="10" value={logData.mood} onChange={e => setLogData({...logData, mood: parseInt(e.target.value)})} style={{ width: '100%', accentColor: colors.secondary }} />
+              </div>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 12 }}>
+                  Workouts Completed: <span style={{ color: colors.text, fontWeight: 600 }}>{logData.workoutsCompleted}</span>
+                  {logData.workoutsCompleted >= 4 && <span style={{ marginLeft: 8, color: colors.success, fontSize: 12 }}>🎯 Great week!</span>}
+                </label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[0,1,2,3,4,5,6,7].map(n => (
+                    <button key={n} onClick={() => setLogData({...logData, workoutsCompleted: n})} style={{ width: 40, height: 40, borderRadius: 8, background: logData.workoutsCompleted === n ? colors.primary : colors.darker, border: 'none', color: logData.workoutsCompleted === n ? 'white' : colors.text, cursor: 'pointer', fontWeight: 600 }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ color: colors.textMuted, fontSize: 13, display: 'block', marginBottom: 8 }}>Notes & Highlights</label>
+                <textarea value={logData.notes} onChange={e => setLogData({...logData, notes: e.target.value})} placeholder="What went well? Any challenges? Wins to celebrate?" style={{ width: '100%', height: 80, padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, resize: 'none' }} />
+              </div>
+              
+              <button onClick={saveLog} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                <Save size={18} style={{ marginRight: 8 }} />Complete Check-in
+              </button>
             </div>
           </div>
         )}
