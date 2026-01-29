@@ -2430,7 +2430,7 @@ const FitnessApp = () => {
     };
 
     return (
-      <div>
+      <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         <div style={{ marginBottom: isMobile ? 20 : 32 }}><h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: colors.text, margin: 0, fontFamily: 'Outfit' }}>Welcome{isMobile ? '' : `, ${loggedInUser?.name}`}! 👋</h1><p style={{ color: colors.textMuted, marginTop: 8, fontSize: isMobile ? 13 : 14 }}>Here's your fitness community overview</p></div>
 
         {/* Reassessment Alerts */}
@@ -4418,48 +4418,92 @@ const FitnessApp = () => {
 
           {corpView === 'employees' && !selectedEmployee && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ color: colors.text, margin: 0, fontSize: 22, fontWeight: 700 }}>Employee Wellness</h2>
-                <div style={{ color: colors.textMuted, fontSize: 14 }}>{employees.length} enrolled employees</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 16 : 24, flexWrap: 'wrap', gap: 8 }}>
+                <h2 style={{ color: colors.text, margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>Employee Wellness</h2>
+                <div style={{ color: colors.textMuted, fontSize: isMobile ? 12 : 14 }}>{employees.length} enrolled employees</div>
               </div>
               
-              <div style={{ background: colors.cardBg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${colors.borderColor}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 100px', padding: '14px 20px', background: colors.darker, borderBottom: `1px solid ${colors.borderColor}` }}>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>EMPLOYEE</span>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>WEEK</span>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>WORKOUTS</span>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>ENERGY</span>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>STATUS</span>
-                  <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}></span>
+              {isMobile ? (
+                /* Mobile: Card layout */
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {employees.map((emp, i) => {
+                    const lastLog = emp.weeklyLogs[emp.weeklyLogs.length - 1];
+                    const totalWk = emp.weeklyLogs.reduce((s, l) => s + l.workoutsCompleted, 0);
+                    return (
+                      <div key={i} style={{ background: colors.cardBg, borderRadius: 14, padding: 16, border: `1px solid ${colors.borderColor}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: 14 }}>
+                              {emp.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{emp.name}</p>
+                              <p style={{ color: colors.textMuted, margin: 0, fontSize: 11, textTransform: 'capitalize' }}>{emp.fitnessLevel}</p>
+                            </div>
+                          </div>
+                          <span style={{ background: emp.injuries?.some(inj => inj.status === 'managing') ? `${colors.warning}20` : `${colors.success}20`, color: emp.injuries?.some(inj => inj.status === 'managing') ? colors.warning : colors.success, padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600 }}>
+                            {emp.injuries?.some(inj => inj.status === 'managing') ? 'Injury' : 'Healthy'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: colors.darker, borderRadius: 10, padding: 12 }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ color: colors.textMuted, margin: 0, fontSize: 10 }}>Week</p>
+                            <p style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 700 }}>{emp.currentWeek}</p>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ color: colors.textMuted, margin: 0, fontSize: 10 }}>Workouts</p>
+                            <p style={{ color: colors.text, margin: 0, fontSize: 16, fontWeight: 700 }}>{totalWk}</p>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ color: colors.textMuted, margin: 0, fontSize: 10 }}>Energy</p>
+                            <p style={{ color: lastLog?.energy >= 7 ? colors.success : lastLog?.energy >= 5 ? colors.warning : colors.danger, margin: 0, fontSize: 16, fontWeight: 700 }}>{lastLog?.energy || '—'}/10</p>
+                          </div>
+                          <button onClick={() => setSelectedEmployee(emp)} style={{ padding: '10px 16px', background: colors.primary, border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {employees.map((emp, i) => {
-                  const lastLog = emp.weeklyLogs[emp.weeklyLogs.length - 1];
-                  const totalWk = emp.weeklyLogs.reduce((s, l) => s + l.workoutsCompleted, 0);
-                  return (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 100px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderColor}`, alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: 14 }}>
-                          {emp.name.split(' ').map(n => n[0]).join('')}
+              ) : (
+                /* Desktop: Table layout */
+                <div style={{ background: colors.cardBg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${colors.borderColor}` }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 100px', padding: '14px 20px', background: colors.darker, borderBottom: `1px solid ${colors.borderColor}` }}>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>EMPLOYEE</span>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>WEEK</span>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>WORKOUTS</span>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>ENERGY</span>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}>STATUS</span>
+                    <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 600 }}></span>
+                  </div>
+                  {employees.map((emp, i) => {
+                    const lastLog = emp.weeklyLogs[emp.weeklyLogs.length - 1];
+                    const totalWk = emp.weeklyLogs.reduce((s, l) => s + l.workoutsCompleted, 0);
+                    return (
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 100px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderColor}`, alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: 14 }}>
+                            {emp.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <p style={{ color: colors.text, margin: 0, fontWeight: 500, fontSize: 14 }}>{emp.name}</p>
+                            <p style={{ color: colors.textMuted, margin: 0, fontSize: 12 }}>{emp.fitnessLevel}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ color: colors.text, margin: 0, fontWeight: 500, fontSize: 14 }}>{emp.name}</p>
-                          <p style={{ color: colors.textMuted, margin: 0, fontSize: 12 }}>{emp.fitnessLevel}</p>
+                        <span style={{ color: colors.text, fontSize: 14 }}>Week {emp.currentWeek}</span>
+                        <span style={{ color: colors.text, fontSize: 14 }}>{totalWk} total</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Zap size={14} color={lastLog?.energy >= 7 ? colors.success : lastLog?.energy >= 5 ? colors.warning : colors.danger} />
+                          <span style={{ color: colors.text, fontSize: 14 }}>{lastLog?.energy || '—'}/10</span>
                         </div>
+                        <span style={{ background: emp.injuries?.some(inj => inj.status === 'managing') ? `${colors.warning}20` : `${colors.success}20`, color: emp.injuries?.some(inj => inj.status === 'managing') ? colors.warning : colors.success, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                          {emp.injuries?.some(inj => inj.status === 'managing') ? 'Injury' : 'Healthy'}
+                        </span>
+                        <button onClick={() => setSelectedEmployee(emp)} style={{ padding: '8px 14px', background: colors.primary, border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>View</button>
                       </div>
-                      <span style={{ color: colors.text, fontSize: 14 }}>Week {emp.currentWeek}</span>
-                      <span style={{ color: colors.text, fontSize: 14 }}>{totalWk} total</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Zap size={14} color={lastLog?.energy >= 7 ? colors.success : lastLog?.energy >= 5 ? colors.warning : colors.danger} />
-                        <span style={{ color: colors.text, fontSize: 14 }}>{lastLog?.energy || '—'}/10</span>
-                      </div>
-                      <span style={{ background: emp.injuries?.some(inj => inj.status === 'managing') ? `${colors.warning}20` : `${colors.success}20`, color: emp.injuries?.some(inj => inj.status === 'managing') ? colors.warning : colors.success, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
-                        {emp.injuries?.some(inj => inj.status === 'managing') ? 'Injury' : 'Healthy'}
-                      </span>
-                      <button onClick={() => setSelectedEmployee(emp)} style={{ padding: '8px 14px', background: colors.primary, border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>View</button>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 
@@ -4483,21 +4527,21 @@ const FitnessApp = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
                 {[
                   { label: 'Total Workouts', value: selectedEmployee.weeklyLogs.reduce((s, l) => s + l.workoutsCompleted, 0), color: colors.primary },
                   { label: 'Current Weight', value: `${selectedEmployee.weight}kg`, color: colors.secondary },
                   { label: 'Target Weight', value: `${selectedEmployee.targetWeight}kg`, color: colors.accent },
                   { label: 'Latest Energy', value: `${selectedEmployee.weeklyLogs[selectedEmployee.weeklyLogs.length - 1]?.energy || 0}/10`, color: colors.success }
                 ].map((stat, i) => (
-                  <div key={i} style={{ background: colors.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${colors.borderColor}`, textAlign: 'center' }}>
-                    <p style={{ color: colors.text, margin: 0, fontSize: 28, fontWeight: 700 }}>{stat.value}</p>
-                    <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>{stat.label}</p>
+                  <div key={i} style={{ background: colors.cardBg, borderRadius: 12, padding: isMobile ? 14 : 20, border: `1px solid ${colors.borderColor}`, textAlign: 'center' }}>
+                    <p style={{ color: colors.text, margin: 0, fontSize: isMobile ? 22 : 28, fontWeight: 700 }}>{stat.value}</p>
+                    <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: isMobile ? 10 : 12 }}>{stat.label}</p>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 24 }}>
                 <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.borderColor}` }}>
                   <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Goals</h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -4713,7 +4757,7 @@ const FitnessApp = () => {
       <PTSidebar />
       <PTMobileHeader />
       <PTMobileMenu />
-      <div style={{ marginLeft: isMobile ? 0 : 260, padding: isMobile ? '76px 16px 86px' : 32, overflowX: 'hidden', width: isMobile ? '100%' : 'auto' }}>
+      <div style={{ marginLeft: isMobile ? 0 : 260, padding: isMobile ? '76px 16px 86px' : 32, overflowX: 'hidden', width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? '100vw' : 'none', boxSizing: 'border-box' }}>
         {selectedClient && <button onClick={() => setSelectedClient(null)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: colors.textMuted, fontSize: 14, cursor: 'pointer', marginBottom: 24 }}>← Back</button>}
         {renderPT()}
       </div>
