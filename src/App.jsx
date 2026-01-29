@@ -1015,8 +1015,8 @@ const FitnessApp = () => {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.darker} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: isMobile ? 16 : 0, overflowX: 'hidden' }}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; } body { margin: 0; overflow-x: hidden; }`}</style>
+      <div style={{ minHeight: '100vh', background: colors.dark, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: isMobile ? 16 : 0, overflowX: 'hidden' }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap'); * { box-sizing: border-box; } html, body { margin: 0; padding: 0; overflow-x: hidden; background: ${colors.dark}; min-height: 100%; }`}</style>
         <div style={{ width: '100%', maxWidth: 420, padding: isMobile ? 20 : 40 }}>
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 24 : 40 }}>
             <div style={{ width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, borderRadius: isMobile ? 14 : 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><Dumbbell size={isMobile ? 28 : 36} color="white" /></div>
@@ -1589,14 +1589,78 @@ const FitnessApp = () => {
     const [editingWorkout, setEditingWorkout] = useState(null);
     const [newWorkout, setNewWorkout] = useState({ day: 'Monday', name: '', type: 'strength', duration: 45, exercises: [] });
     const [newExercise, setNewExercise] = useState({ name: '', sets: 3, reps: '10', notes: '' });
+    const [trackingDay, setTrackingDay] = useState(null); // Which day's workout we're logging
+    const [exerciseLogs, setExerciseLogs] = useState({}); // Temp logs while tracking
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const workoutTypes = [{ id: 'strength', label: 'Strength', icon: '🏋️' }, { id: 'cardio', label: 'Cardio', icon: '🏃' }, { id: 'hybrid', label: 'Hybrid', icon: '⚡' }, { id: 'recovery', label: 'Recovery', icon: '🧘' }];
 
-    // Use lifted state for toggle - prevents re-render reset
+    // Today's day name
+    const todayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
+    const todayDate = new Date().toISOString().slice(0, 10);
+
+    // Use lifted state for toggle
     const useCustom = workoutViewMode === 'custom';
-    const toggleMode = (custom) => {
-      setWorkoutViewMode(custom ? 'custom' : 'suggested');
+    const toggleMode = (custom) => setWorkoutViewMode(custom ? 'custom' : 'suggested');
+
+    // Check if a day's workout was already logged today
+    const getWorkoutLog = (dayName) => {
+      return (client.workoutLogs || []).find(log => log.date === todayDate && log.dayName === dayName);
+    };
+
+    // Start tracking a workout day
+    const startTracking = (day) => {
+      setTrackingDay(day);
+      const existingLog = getWorkoutLog(day.day);
+      if (existingLog) {
+        // Load existing log data
+        const logs = {};
+        existingLog.exercises.forEach(ex => {
+          logs[ex.name] = ex;
+        });
+        setExerciseLogs(logs);
+      } else {
+        // Initialize with empty data for each exercise
+        const logs = {};
+        day.exercises.forEach(ex => {
+          logs[ex.name] = { completed: false, weight: '', reps: '', sets: '', notes: '' };
+        });
+        setExerciseLogs(logs);
+      }
+    };
+
+    // Update a single exercise log
+    const updateExerciseLog = (exName, field, value) => {
+      setExerciseLogs(prev => ({
+        ...prev,
+        [exName]: { ...prev[exName], [field]: value }
+      }));
+    };
+
+    // Save workout log
+    const saveWorkoutLog = () => {
+      const logEntry = {
+        date: todayDate,
+        dayName: trackingDay.day,
+        workoutName: trackingDay.name,
+        exercises: Object.entries(exerciseLogs).map(([name, data]) => ({ name, ...data })),
+        completedAt: new Date().toISOString()
+      };
+
+      // Update or add log
+      let updatedLogs = [...(client.workoutLogs || [])];
+      const existingIndex = updatedLogs.findIndex(l => l.date === todayDate && l.dayName === trackingDay.day);
+      if (existingIndex >= 0) {
+        updatedLogs[existingIndex] = logEntry;
+      } else {
+        updatedLogs.push(logEntry);
+      }
+
+      const updated = clients.map(c => c.id === client.id ? { ...c, workoutLogs: updatedLogs } : c);
+      setClients(updated);
+      setLoggedInUser({ ...client, workoutLogs: updatedLogs });
+      setTrackingDay(null);
+      setExerciseLogs({});
     };
 
     const addExercise = () => {
@@ -1637,8 +1701,114 @@ const FitnessApp = () => {
       setShowAddWorkout(true);
     };
 
+    // Workout Tracking Modal
+    const WorkoutTrackingModal = () => {
+      if (!trackingDay) return null;
+      const completedCount = Object.values(exerciseLogs).filter(e => e.completed).length;
+      const totalCount = trackingDay.exercises.length;
+
+      return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Log Workout</h2>
+                <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>{trackingDay.day} • {trackingDay.name}</p>
+              </div>
+              <button onClick={() => setTrackingDay(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+            </div>
+
+            {/* Progress */}
+            <div style={{ background: colors.darker, borderRadius: 12, padding: 14, marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ color: colors.textMuted, fontSize: 13 }}>Progress</span>
+                <span style={{ color: completedCount === totalCount ? colors.success : colors.text, fontWeight: 600 }}>{completedCount}/{totalCount} exercises</span>
+              </div>
+              <div style={{ height: 6, background: colors.borderColor, borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(completedCount/totalCount)*100}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.success})`, borderRadius: 3, transition: 'width 0.3s' }} />
+              </div>
+            </div>
+
+            {/* Exercises */}
+            <div style={{ marginBottom: 20 }}>
+              {trackingDay.exercises.map((ex, i) => {
+                const log = exerciseLogs[ex.name] || {};
+                return (
+                  <div key={i} style={{ background: log.completed ? `${colors.success}15` : colors.darker, borderRadius: 14, padding: 16, marginBottom: 12, border: `2px solid ${log.completed ? colors.success : 'transparent'}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                      <button 
+                        onClick={() => updateExerciseLog(ex.name, 'completed', !log.completed)}
+                        style={{ width: 28, height: 28, borderRadius: 8, background: log.completed ? colors.success : colors.borderColor, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        {log.completed && <Check size={16} color="white" />}
+                      </button>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{ex.name}</p>
+                        {ex.prescription && <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>Target: {ex.prescription.sets}×{ex.prescription.reps}</p>}
+                      </div>
+                      <span style={{ fontSize: 24 }}>{ex.demo}</span>
+                    </div>
+                    
+                    {/* Tracking inputs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                      <div>
+                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>WEIGHT (kg)</label>
+                        <input 
+                          type="number" 
+                          value={log.weight || ''} 
+                          onChange={e => updateExerciseLog(ex.name, 'weight', e.target.value)}
+                          placeholder="—"
+                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>SETS</label>
+                        <input 
+                          type="number" 
+                          value={log.sets || ''} 
+                          onChange={e => updateExerciseLog(ex.name, 'sets', e.target.value)}
+                          placeholder={ex.prescription?.sets || '—'}
+                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ color: colors.textMuted, fontSize: 10, display: 'block', marginBottom: 4 }}>REPS</label>
+                        <input 
+                          value={log.reps || ''} 
+                          onChange={e => updateExerciseLog(ex.name, 'reps', e.target.value)}
+                          placeholder={ex.prescription?.reps || '—'}
+                          style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 14, textAlign: 'center' }} 
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Notes */}
+                    <input 
+                      value={log.notes || ''} 
+                      onChange={e => updateExerciseLog(ex.name, 'notes', e.target.value)}
+                      placeholder="Add notes (optional)..."
+                      style={{ width: '100%', padding: 10, background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 8, color: colors.text, fontSize: 13, marginTop: 8 }} 
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <button 
+              onClick={saveWorkoutLog} 
+              style={{ width: '100%', padding: 16, background: `linear-gradient(135deg, ${colors.primary}, ${colors.success})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Save size={18} style={{ marginRight: 8 }} />Save Workout Log
+            </button>
+          </div>
+        </div>
+      );
+    };
+
     return (
       <>
+        <WorkoutTrackingModal />
+        
         {/* Mode Toggle */}
         <div style={{ display: 'flex', gap: 8, background: colors.darker, padding: 4, borderRadius: 12, marginBottom: 24 }}>
           <button onClick={() => toggleMode(false)} style={{ flex: 1, padding: 14, background: !useCustom ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: !useCustom ? colors.text : colors.textMuted, fontSize: 14, fontWeight: !useCustom ? 600 : 400, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -1657,28 +1827,55 @@ const FitnessApp = () => {
               <p style={{ color: colors.textMuted, margin: 0, fontSize: 14 }}>{workout.philosophy}</p>
             </div>
             <h3 style={{ color: colors.text, margin: '0 0 16px', fontSize: 18, fontWeight: 600 }}>Weekly Plan</h3>
-            {workout.schedule.map((day, i) => (
-              <div key={i} style={{ background: colors.cardBg, borderRadius: 16, border: `1px solid ${colors.borderColor}`, marginBottom: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', background: day.type === 'recovery' ? `${colors.secondary}15` : `${colors.primary}15`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div><span style={{ color: colors.primary, fontWeight: 700, fontSize: 12 }}>{day.day}</span><h4 style={{ color: colors.text, margin: '4px 0 0', fontSize: 16, fontWeight: 600 }}>{day.name}</h4></div>
-                  <span style={{ color: colors.textMuted, fontSize: 13 }}><Clock size={14} /> {day.duration}min</span>
-                </div>
-                <div style={{ padding: 20 }}>
-                  {day.exercises.map((ex, j) => (
-                    <div key={j} onClick={() => ex.id && setSelectedExercise(ex)} style={{ background: colors.darker, borderRadius: 12, padding: 14, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: ex.id ? 'pointer' : 'default' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 24 }}>{ex.demo}</span>
-                        <div>
-                          <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{ex.name}</p>
-                          {ex.prescription && <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>{ex.prescription.sets}×{ex.prescription.reps} • {ex.prescription.rest}s {ex.prescription.progressNote && <span style={{ color: colors.success }}>{ex.prescription.progressNote}</span>}</p>}
+            {workout.schedule.map((day, i) => {
+              const todayLog = getWorkoutLog(day.day);
+              const isToday = day.day === todayName;
+              return (
+                <div key={i} style={{ background: colors.cardBg, borderRadius: 16, border: `1px solid ${todayLog ? colors.success : isToday ? colors.primary : colors.borderColor}`, marginBottom: 16, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', background: todayLog ? `${colors.success}15` : day.type === 'recovery' ? `${colors.secondary}15` : `${colors.primary}15`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {todayLog && <Check size={20} color={colors.success} />}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: isToday ? colors.primary : colors.textMuted, fontWeight: 700, fontSize: 12 }}>{day.day}</span>
+                          {isToday && <span style={{ background: colors.primary, color: 'white', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600 }}>TODAY</span>}
+                          {todayLog && <span style={{ background: colors.success, color: 'white', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600 }}>LOGGED</span>}
                         </div>
+                        <h4 style={{ color: colors.text, margin: '4px 0 0', fontSize: 16, fontWeight: 600 }}>{day.name}</h4>
                       </div>
-                      {ex.id && <Eye size={18} color={colors.primary} />}
                     </div>
-                  ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ color: colors.textMuted, fontSize: 13 }}><Clock size={14} /> {day.duration}min</span>
+                      <button 
+                        onClick={() => startTracking(day)}
+                        style={{ padding: '8px 14px', background: todayLog ? colors.success : `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`, border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        {todayLog ? <><FileText size={14} />Edit</> : <><Plus size={14} />Log</>}
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ padding: 20 }}>
+                    {day.exercises.map((ex, j) => {
+                      const logged = todayLog?.exercises?.find(e => e.name === ex.name);
+                      return (
+                        <div key={j} onClick={() => ex.id && setSelectedExercise(ex)} style={{ background: logged?.completed ? `${colors.success}10` : colors.darker, borderRadius: 12, padding: 14, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: ex.id ? 'pointer' : 'default' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {logged?.completed && <Check size={16} color={colors.success} />}
+                            <span style={{ fontSize: 24 }}>{ex.demo}</span>
+                            <div>
+                              <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 14 }}>{ex.name}</p>
+                              {ex.prescription && <p style={{ color: colors.textMuted, margin: '2px 0 0', fontSize: 12 }}>{ex.prescription.sets}×{ex.prescription.reps} • {ex.prescription.rest}s</p>}
+                              {logged && logged.weight && <p style={{ color: colors.success, margin: '2px 0 0', fontSize: 11 }}>Logged: {logged.weight}kg × {logged.sets || '—'}×{logged.reps || '—'}</p>}
+                            </div>
+                          </div>
+                          {ex.id && <Eye size={18} color={colors.primary} />}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         ) : (
           /* Custom Workouts */
@@ -2085,31 +2282,66 @@ const FitnessApp = () => {
 
           {/* Profile Edit Modal - Injury Only */}
           {showProfileEdit && profileEditSection === 'injury' && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div style={{ background: colors.cardBg, borderRadius: 20, width: '90%', maxWidth: 450, padding: 28 }}>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+              <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 450, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Report New Injury</h2>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Report Injury Status</h2>
                   <button onClick={() => setShowProfileEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
                 </div>
 
-                <div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Injury Type</label>
-                    <input value={editFormData.type || ''} onChange={e => setEditFormData({ ...editFormData, type: e.target.value })} placeholder="e.g. Lower back pain, Knee strain" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+                {/* No Injuries Option */}
+                <div 
+                  onClick={() => setEditFormData({ ...editFormData, noInjuries: !editFormData.noInjuries, type: '' })} 
+                  style={{ background: editFormData.noInjuries ? `${colors.success}15` : colors.darker, borderRadius: 12, padding: 16, marginBottom: 20, border: `2px solid ${editFormData.noInjuries ? colors.success : 'transparent'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                >
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: editFormData.noInjuries ? colors.success : colors.borderColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {editFormData.noInjuries && <Check size={16} color="white" />}
                   </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Status</label>
-                    <select value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }}>
-                      <option value="managing">Currently Managing</option>
-                      <option value="recovered">Recovered</option>
-                    </select>
+                  <div>
+                    <p style={{ color: colors.text, margin: 0, fontWeight: 600, fontSize: 15 }}>✓ No injuries to report</p>
+                    <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 12 }}>I'm injury-free and ready to train at full capacity</p>
                   </div>
-                  <div style={{ marginBottom: 24 }}>
-                    <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Notes for PT</label>
-                    <textarea value={editFormData.notes || ''} onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })} placeholder="Any details about the injury, limitations, etc." style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, height: 80, resize: 'none' }} />
-                  </div>
-                  <button onClick={() => { if (editFormData.type) { addNewInjury(editFormData); setShowProfileEdit(false); } }} style={{ width: '100%', padding: 14, background: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}><Plus size={18} style={{ marginRight: 8 }} />Report Injury</button>
                 </div>
+
+                {!editFormData.noInjuries && (
+                  <>
+                    <div style={{ borderTop: `1px solid ${colors.borderColor}`, paddingTop: 20, marginBottom: 16 }}>
+                      <p style={{ color: colors.textMuted, fontSize: 12, marginBottom: 16 }}>Or report a new injury:</p>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Injury Type</label>
+                        <input value={editFormData.type || ''} onChange={e => setEditFormData({ ...editFormData, type: e.target.value })} placeholder="e.g. Lower back pain, Knee strain" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Status</label>
+                        <select value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }}>
+                          <option value="managing">Currently Managing</option>
+                          <option value="recovered">Recovered</option>
+                        </select>
+                      </div>
+                      <div style={{ marginBottom: 24 }}>
+                        <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Notes for PT</label>
+                        <textarea value={editFormData.notes || ''} onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })} placeholder="Any details about the injury, limitations, etc." style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, height: 80, resize: 'none' }} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <button 
+                  onClick={() => { 
+                    if (editFormData.noInjuries) {
+                      // Clear all injuries
+                      updateClientProfile('injuries', []);
+                      setShowProfileEdit(false);
+                    } else if (editFormData.type) { 
+                      addNewInjury(editFormData); 
+                      setShowProfileEdit(false); 
+                    } 
+                  }} 
+                  disabled={!editFormData.noInjuries && !editFormData.type}
+                  style={{ width: '100%', padding: 14, background: (editFormData.noInjuries || editFormData.type) ? `linear-gradient(135deg, ${editFormData.noInjuries ? colors.success : colors.warning}, ${editFormData.noInjuries ? colors.primary : colors.accent})` : colors.borderColor, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: (editFormData.noInjuries || editFormData.type) ? 'pointer' : 'not-allowed' }}
+                >
+                  {editFormData.noInjuries ? <><Check size={18} style={{ marginRight: 8 }} />Confirm No Injuries</> : <><Plus size={18} style={{ marginRight: 8 }} />Report Injury</>}
+                </button>
               </div>
             </div>
           )}
@@ -2910,7 +3142,7 @@ const FitnessApp = () => {
 
         <div style={{ display: 'flex', gap: 4, background: colors.darker, padding: 4, borderRadius: 12, marginBottom: isMobile ? 16 : 24, overflowX: 'auto' }}>
           {client.status === 'onboarding' && <button onClick={() => setTab('onboarding')} style={{ flex: isMobile ? 'none' : 1, padding: isMobile ? '10px 14px' : 12, background: tab === 'onboarding' ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === 'onboarding' ? colors.text : colors.textMuted, fontSize: isMobile ? 12 : 14, fontWeight: tab === 'onboarding' ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}>Setup</button>}
-          {['overview', 'workout', 'progress', 'nutrition'].map(t => <button key={t} onClick={() => setTab(t)} disabled={client.status === 'onboarding' && t !== 'overview'} style={{ flex: isMobile ? 'none' : 1, padding: isMobile ? '10px 14px' : 12, background: tab === t ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === t ? colors.text : colors.textMuted, fontSize: isMobile ? 12 : 14, fontWeight: tab === t ? 600 : 400, cursor: client.status === 'onboarding' && t !== 'overview' ? 'not-allowed' : 'pointer', opacity: client.status === 'onboarding' && t !== 'overview' ? 0.5 : 1, textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{t}</button>)}
+          {['overview', 'workout', 'progress', 'nutrition', 'logs'].map(t => <button key={t} onClick={() => setTab(t)} disabled={client.status === 'onboarding' && t !== 'overview'} style={{ flex: isMobile ? 'none' : 1, padding: isMobile ? '10px 14px' : 12, background: tab === t ? colors.cardBg : 'transparent', border: 'none', borderRadius: 10, color: tab === t ? colors.text : colors.textMuted, fontSize: isMobile ? 12 : 14, fontWeight: tab === t ? 600 : 400, cursor: client.status === 'onboarding' && t !== 'overview' ? 'not-allowed' : 'pointer', opacity: client.status === 'onboarding' && t !== 'overview' ? 0.5 : 1, textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{t === 'logs' ? 'Workout Logs' : t}</button>)}
         </div>
 
         {/* Onboarding Tab */}
@@ -3251,6 +3483,78 @@ const FitnessApp = () => {
           </>
         )}
 
+        {/* Workout Logs Tab - PT can see client's logged workouts */}
+        {tab === 'logs' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <div>
+                <h3 style={{ color: colors.text, margin: 0, fontSize: 18, fontWeight: 600 }}>Workout Logs</h3>
+                <p style={{ color: colors.textMuted, marginTop: 4, fontSize: 13 }}>{client.name}'s exercise tracking history</p>
+              </div>
+              <div style={{ background: colors.cardBg, padding: '8px 16px', borderRadius: 10, border: `1px solid ${colors.borderColor}` }}>
+                <span style={{ color: colors.textMuted, fontSize: 12 }}>Total Logs: </span>
+                <span style={{ color: colors.text, fontWeight: 700 }}>{(client.workoutLogs || []).length}</span>
+              </div>
+            </div>
+
+            {(!client.workoutLogs || client.workoutLogs.length === 0) ? (
+              <div style={{ background: colors.cardBg, borderRadius: 16, padding: 60, textAlign: 'center', border: `1px solid ${colors.borderColor}` }}>
+                <FileText size={48} color={colors.textMuted} style={{ marginBottom: 16 }} />
+                <h3 style={{ color: colors.text, margin: '0 0 8px' }}>No Workout Logs Yet</h3>
+                <p style={{ color: colors.textMuted, margin: 0 }}>Client hasn't logged any workouts. They can track exercises from their Workout tab.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 16 }}>
+                {[...client.workoutLogs].reverse().map((log, i) => {
+                  const completedExercises = log.exercises.filter(e => e.completed).length;
+                  const totalExercises = log.exercises.length;
+                  return (
+                    <div key={i} style={{ background: colors.cardBg, borderRadius: 16, border: `1px solid ${colors.borderColor}`, overflow: 'hidden' }}>
+                      <div style={{ padding: '16px 20px', background: `${colors.primary}10`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${colors.borderColor}` }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: colors.primary, fontWeight: 700, fontSize: 12 }}>{log.dayName}</span>
+                            <span style={{ color: colors.textMuted, fontSize: 12 }}>•</span>
+                            <span style={{ color: colors.textMuted, fontSize: 12 }}>{log.date}</span>
+                          </div>
+                          <h4 style={{ color: colors.text, margin: '4px 0 0', fontSize: 16, fontWeight: 600 }}>{log.workoutName}</h4>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ background: completedExercises === totalExercises ? `${colors.success}20` : `${colors.warning}20`, color: completedExercises === totalExercises ? colors.success : colors.warning, padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                            {completedExercises}/{totalExercises} completed
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ padding: 16 }}>
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          {log.exercises.map((ex, j) => (
+                            <div key={j} style={{ background: ex.completed ? `${colors.success}08` : colors.darker, borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `3px solid ${ex.completed ? colors.success : colors.borderColor}` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                {ex.completed ? <Check size={18} color={colors.success} /> : <X size={18} color={colors.textMuted} />}
+                                <div>
+                                  <p style={{ color: colors.text, margin: 0, fontWeight: 500, fontSize: 14 }}>{ex.name}</p>
+                                  {ex.notes && <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 11, fontStyle: 'italic' }}>"{ex.notes}"</p>}
+                                </div>
+                              </div>
+                              {(ex.weight || ex.sets || ex.reps) && (
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                  {ex.weight && <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 9 }}>WEIGHT</p><p style={{ color: colors.text, margin: 0, fontSize: 14, fontWeight: 700 }}>{ex.weight}kg</p></div>}
+                                  {ex.sets && <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 9 }}>SETS</p><p style={{ color: colors.text, margin: 0, fontSize: 14, fontWeight: 700 }}>{ex.sets}</p></div>}
+                                  {ex.reps && <div style={{ textAlign: 'center' }}><p style={{ color: colors.textMuted, margin: 0, fontSize: 9 }}>REPS</p><p style={{ color: colors.text, margin: 0, fontSize: 14, fontWeight: 700 }}>{ex.reps}</p></div>}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {editingSection && <OnboardingEditor section={editingSection} />}
       </div>
     );
@@ -3261,6 +3565,17 @@ const FitnessApp = () => {
     const [viewingGroup, setViewingGroup] = useState(null);
     const [showAddMember, setShowAddMember] = useState(false);
     const [showRequests, setShowRequests] = useState(false);
+    const [addingChallengeToGroup, setAddingChallengeToGroup] = useState(null);
+    const [newChallenge, setNewChallenge] = useState({ name: '', description: '', challengeType: 'general', status: 'open', startDate: '', endDate: '', milestones: [] });
+    const [newMilestone, setNewMilestone] = useState({ week: '', goal: '', reward: '' });
+    
+    const challengeTypes = [
+      { id: 'general', label: 'General Fitness', icon: '💪' },
+      { id: 'walking', label: 'Walking', icon: '🚶' },
+      { id: 'running', label: 'Running', icon: '🏃' },
+      { id: 'strength', label: 'Strength', icon: '🏋️' },
+      { id: 'wellness', label: 'Wellness', icon: '🧘' }
+    ];
     
     const pendingRequests = membershipRequests.filter(r => r.status === 'pending');
     
@@ -3422,10 +3737,11 @@ const FitnessApp = () => {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button onClick={() => { setSelectedGroupForReport(g); setShowReportPreview(true); }} style={{ flex: 1, padding: 12, background: colors.primary, border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><FileText size={16} style={{ marginRight: 6 }} />Report</button>
-                <button onClick={() => setViewingGroup(g)} style={{ flex: 1, padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 13, cursor: 'pointer' }}><Users size={16} style={{ marginRight: 6 }} />View Members</button>
-                <button onClick={() => setAddingMemberToGroup(g)} style={{ flex: 1, padding: 12, background: `${colors.success}20`, border: `1px solid ${colors.success}`, borderRadius: 10, color: colors.success, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><Plus size={16} style={{ marginRight: 6 }} />Add Member</button>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <button onClick={() => { setSelectedGroupForReport(g); setShowReportPreview(true); }} style={{ flex: 1, minWidth: 100, padding: 12, background: colors.primary, border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><FileText size={16} style={{ marginRight: 6 }} />Report</button>
+                <button onClick={() => setViewingGroup(g)} style={{ flex: 1, minWidth: 100, padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 13, cursor: 'pointer' }}><Users size={16} style={{ marginRight: 6 }} />View Members</button>
+                <button onClick={() => setAddingMemberToGroup(g)} style={{ flex: 1, minWidth: 100, padding: 12, background: `${colors.success}20`, border: `1px solid ${colors.success}`, borderRadius: 10, color: colors.success, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><Plus size={16} style={{ marginRight: 6 }} />Add Member</button>
+                <button onClick={() => setAddingChallengeToGroup(g)} style={{ flex: 1, minWidth: 100, padding: 12, background: `${colors.accent}20`, border: `1px solid ${colors.accent}`, borderRadius: 10, color: colors.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><Trophy size={16} style={{ marginRight: 6 }} />Add Challenge</button>
               </div>
             </div>
           );
@@ -3505,6 +3821,91 @@ const FitnessApp = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Add Challenge to Group Modal */}
+        {addingChallengeToGroup && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+            <div style={{ background: colors.cardBg, borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ color: colors.text, margin: 0, fontSize: 20, fontWeight: 700 }}>Add Challenge</h2>
+                  <p style={{ color: colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>to {addingChallengeToGroup.name}</p>
+                </div>
+                <button onClick={() => { setAddingChallengeToGroup(null); setNewChallenge({ name: '', description: '', challengeType: 'general', status: 'open', startDate: '', endDate: '', milestones: [] }); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color={colors.textMuted} /></button>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Challenge Name *</label>
+                <input value={newChallenge.name} onChange={e => setNewChallenge({...newChallenge, name: e.target.value})} placeholder="e.g. Q1 Fitness Challenge" style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Challenge Type</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {challengeTypes.map(t => (
+                    <button key={t.id} onClick={() => setNewChallenge({...newChallenge, challengeType: t.id})} style={{ padding: '8px 14px', background: newChallenge.challengeType === t.id ? `${colors.primary}20` : colors.darker, border: `1px solid ${newChallenge.challengeType === t.id ? colors.primary : colors.borderColor}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>{t.icon}</span>
+                      <span style={{ color: newChallenge.challengeType === t.id ? colors.primary : colors.text, fontSize: 12 }}>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Description</label>
+                <textarea value={newChallenge.description} onChange={e => setNewChallenge({...newChallenge, description: e.target.value})} placeholder="What's the challenge about?" rows={2} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, resize: 'none' }} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Start Date *</label>
+                  <input type="date" value={newChallenge.startDate} onChange={e => setNewChallenge({...newChallenge, startDate: e.target.value})} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+                </div>
+                <div>
+                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>End Date *</label>
+                  <input type="date" value={newChallenge.endDate} onChange={e => setNewChallenge({...newChallenge, endDate: e.target.value})} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14 }} />
+                </div>
+              </div>
+
+              {/* Milestones */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 8 }}>Milestones & Rewards (optional)</label>
+                {newChallenge.milestones.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    {newChallenge.milestones.map((m, i) => (
+                      <div key={i} style={{ background: colors.darker, padding: 10, borderRadius: 8, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: colors.text, fontSize: 12 }}>Week {m.week}: {m.goal} → 🎁 {m.reward}</span>
+                        <button onClick={() => setNewChallenge({...newChallenge, milestones: newChallenge.milestones.filter((_, idx) => idx !== i)})} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} color={colors.danger} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr auto', gap: 6 }}>
+                  <input type="number" value={newMilestone.week} onChange={e => setNewMilestone({...newMilestone, week: e.target.value})} placeholder="Wk" style={{ padding: 8, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 6, color: colors.text, fontSize: 12 }} />
+                  <input value={newMilestone.goal} onChange={e => setNewMilestone({...newMilestone, goal: e.target.value})} placeholder="Goal (e.g. 10 workouts)" style={{ padding: 8, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 6, color: colors.text, fontSize: 12 }} />
+                  <input value={newMilestone.reward} onChange={e => setNewMilestone({...newMilestone, reward: e.target.value})} placeholder="Reward" style={{ padding: 8, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 6, color: colors.text, fontSize: 12 }} />
+                  <button onClick={() => { if (newMilestone.week && newMilestone.goal) { setNewChallenge({...newChallenge, milestones: [...newChallenge.milestones, {...newMilestone}]}); setNewMilestone({ week: '', goal: '', reward: '' }); }}} style={{ padding: 8, background: colors.secondary, border: 'none', borderRadius: 6, cursor: 'pointer' }}><Plus size={14} color="white" /></button>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (newChallenge.name && newChallenge.startDate && newChallenge.endDate) {
+                    const challenge = { ...newChallenge, id: Date.now(), participants: [] };
+                    const updatedGroups = groups.map(g => g.id === addingChallengeToGroup.id ? { ...g, challenges: [...(g.challenges || []), challenge] } : g);
+                    setGroups(updatedGroups);
+                    setAddingChallengeToGroup(null);
+                    setNewChallenge({ name: '', description: '', challengeType: 'general', status: 'open', startDate: '', endDate: '', milestones: [] });
+                  }
+                }}
+                disabled={!newChallenge.name || !newChallenge.startDate || !newChallenge.endDate}
+                style={{ width: '100%', padding: 14, background: newChallenge.name && newChallenge.startDate && newChallenge.endDate ? `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})` : colors.borderColor, border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 600, cursor: newChallenge.name && newChallenge.startDate && newChallenge.endDate ? 'pointer' : 'not-allowed' }}
+              >
+                <Trophy size={18} style={{ marginRight: 8 }} />Create Challenge
+              </button>
             </div>
           </div>
         )}
