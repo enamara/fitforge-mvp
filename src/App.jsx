@@ -299,7 +299,6 @@ const FitnessApp = () => {
 
   const [showNewGroupForm, setShowNewGroupForm] = useState(false);
   const [showPTProfileEdit, setShowPTProfileEdit] = useState(false);
-  const [ptProfileForm, setPtProfileForm] = useState({ name: 'Marcus Thompson', email: 'marcus@fitforge.com', phone: '+256 700 123456' });
   const [selectedGroupForReport, setSelectedGroupForReport] = useState(null);
   const [selectedClientForReport, setSelectedClientForReport] = useState(null);
   const [showReportPreview, setShowReportPreview] = useState(false);
@@ -1051,6 +1050,50 @@ const FitnessApp = () => {
   };
 
   // ============ EXERCISE MODAL ============
+  // PT Profile Edit Modal Component (separate to prevent cursor jumping)
+  const PTProfileEditModal = ({ currentUser, onSave, onClose }) => {
+    const [formData, setFormData] = useState({
+      name: currentUser?.name || '',
+      email: currentUser?.email || '',
+      phone: currentUser?.phone || ''
+    });
+
+    const handleSave = () => {
+      onSave(formData);
+    };
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+        <div style={{ background: colors.cardBg, borderRadius: 20, padding: 24, width: '100%', maxWidth: 450, maxHeight: '90vh', overflow: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{ color: colors.text, margin: 0, fontSize: 18, fontWeight: 700 }}>Edit Your Profile</h3>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer' }}><X size={20} /></button>
+          </div>
+          
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div>
+              <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Full Name</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Email Address</label>
+              <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Phone Number</label>
+              <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+            <button onClick={onClose} style={{ flex: 1, padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={handleSave} style={{ flex: 1, padding: 12, background: colors.primary, border: 'none', borderRadius: 10, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Save Changes</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const ExerciseModal = ({ exercise, onClose }) => (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
       <div style={{ background: colors.cardBg, borderRadius: 24, width: '100%', maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }}>
@@ -2935,8 +2978,14 @@ const FitnessApp = () => {
       setClients(updated);
     };
 
-    const handlePTProfileSave = () => {
-      setLoggedInUser({ ...loggedInUser, ...ptProfileForm });
+    const handlePTProfileSave = (formData) => {
+      const oldName = loggedInUser?.name;
+      // Update logged in user
+      setLoggedInUser({ ...loggedInUser, ...formData });
+      // Sync PT name with groups where this PT is the contact
+      if (oldName !== formData.name) {
+        setGroups(groups.map(g => g.ptContact === oldName ? { ...g, ptContact: formData.name } : g));
+      }
       setShowPTProfileEdit(false);
     };
 
@@ -2947,41 +2996,18 @@ const FitnessApp = () => {
             <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: colors.text, margin: 0, fontFamily: 'Outfit' }}>Welcome{isMobile ? '' : `, ${loggedInUser?.name}`}! 👋</h1>
             <p style={{ color: colors.textMuted, marginTop: 8, fontSize: isMobile ? 13 : 14 }}>Here's your fitness community overview</p>
           </div>
-          <button onClick={() => { setPtProfileForm({ name: loggedInUser?.name || '', email: loggedInUser?.email || '', phone: loggedInUser?.phone || '' }); setShowPTProfileEdit(true); }} style={{ padding: '10px 16px', background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => setShowPTProfileEdit(true)} style={{ padding: '10px 16px', background: colors.cardBg, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             <User size={16} /> Edit Profile
           </button>
         </div>
 
         {/* PT Profile Edit Modal */}
         {showPTProfileEdit && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-            <div style={{ background: colors.cardBg, borderRadius: 20, padding: 24, width: '100%', maxWidth: 450, maxHeight: '90vh', overflow: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ color: colors.text, margin: 0, fontSize: 18, fontWeight: 700 }}>Edit Your Profile</h3>
-                <button onClick={() => setShowPTProfileEdit(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer' }}><X size={20} /></button>
-              </div>
-              
-              <div style={{ display: 'grid', gap: 16 }}>
-                <div>
-                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Full Name</label>
-                  <input type="text" value={ptProfileForm.name} onChange={e => setPtProfileForm({ ...ptProfileForm, name: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Email Address</label>
-                  <input type="email" value={ptProfileForm.email} onChange={e => setPtProfileForm({ ...ptProfileForm, email: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ color: colors.textMuted, fontSize: 12, display: 'block', marginBottom: 6 }}>Phone Number</label>
-                  <input type="tel" value={ptProfileForm.phone} onChange={e => setPtProfileForm({ ...ptProfileForm, phone: e.target.value })} style={{ width: '100%', padding: 12, background: colors.darker, border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                <button onClick={() => setShowPTProfileEdit(false)} style={{ flex: 1, padding: 12, background: 'transparent', border: `1px solid ${colors.borderColor}`, borderRadius: 10, color: colors.text, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handlePTProfileSave} style={{ flex: 1, padding: 12, background: colors.primary, border: 'none', borderRadius: 10, color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Save Changes</button>
-              </div>
-            </div>
-          </div>
+          <PTProfileEditModal 
+            currentUser={loggedInUser} 
+            onSave={handlePTProfileSave} 
+            onClose={() => setShowPTProfileEdit(false)} 
+          />
         )}
 
         {/* Reassessment Alerts */}
